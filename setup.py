@@ -6,10 +6,15 @@ with open("requirements.in") as f:
 with open("test-requirements.in") as f:
     tests_require = [line for line in f if line and line[0] not in "#-"]
 
+with open("README.md") as f:
+    readme = f.read()
+
 setup(
     name="structlog-sentry",
     version="1.0.0",
     url="https://github.com/kiwicom/structlog-sentry",
+    long_description=readme,
+    long_description_content_type="text/markdown",
     author="Pavel Dedík",
     author_email="pavel.dedik@kiwi.com",
     packages=find_packages(),

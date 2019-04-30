@@ -7,6 +7,14 @@
 
 Based on <https://gist.github.com/hynek/a1f3f92d57071ebc5b91>
 
+## Installation
+
+Install the package with [pip](https://pip.pypa.io/):
+
+```
+pip install structlog-sentry
+```
+
 ## Usage
 
 This module is intended to be used with `structlog` like this:
