@@ -70,6 +70,13 @@ log.warning("warning message", scope="invoices")
 log.error("error message", scope="products")
 ```
 
+If you do not want to forward logs into Sentry, just pass the `sentry_skip=True`
+optional argument to logger methods, like this:
+
+```python
+log.error(sentry_skip=True)
+```
+
 ## Testing
 
 To run all tests:
