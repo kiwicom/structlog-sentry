@@ -11,7 +11,7 @@ with open("README.md") as f:
 
 setup(
     name="structlog-sentry",
-    version="1.0.0",
+    version="1.1.0",
     url="https://github.com/kiwicom/structlog-sentry",
     long_description=readme,
     long_description_content_type="text/markdown",
