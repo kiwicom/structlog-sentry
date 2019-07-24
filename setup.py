@@ -1,5 +1,6 @@
 from setuptools import find_packages, setup
 
+
 with open("requirements.in") as f:
     install_requires = [line for line in f if line and line[0] not in "#-"]
 
@@ -27,8 +28,6 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",

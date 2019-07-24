@@ -93,7 +93,7 @@ log.error("error message", city="Tehran", timezone="UTC+3:30", movie_title="Some
 ```
 
 this will report the error and the sentry event will have **city** and **timezone** tags.
-If you want to have all event data as tags, create the `SentryProcessor` with `tag_keys="__all__"`.  
+If you want to have all event data as tags, create the `SentryProcessor` with `tag_keys="__all__"`.
 
 ```python
 structlog.configure(
@@ -106,7 +106,7 @@ structlog.configure(
 
 ### Skip Extra
 
-By default `SentryProcessor` will send `event_dict` key/value pairs as extra info to the sentry. 
+By default `SentryProcessor` will send `event_dict` key/value pairs as extra info to the sentry.
 Sometimes you may want to skip this, specially when sending the `event_dict` as sentry tags:
 
 ```python
@@ -120,7 +120,7 @@ structlog.configure(
 
 ### Logging as JSON
 
-If you want to configure `structlog` to format the output as **JSON** 
+If you want to configure `structlog` to format the output as **JSON**
 (maybe for [elk-stack](https://www.elastic.co/elk-stack)) you have to use `SentryJsonProcessor` to prevent
 duplication of an event reported to sentry.
 

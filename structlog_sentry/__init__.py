@@ -8,21 +8,25 @@ from sentry_sdk.utils import event_from_exception
 
 
 class SentryProcessor:
+    """Sentry processor for structlog.
+
+    Uses Sentry SDK to capture events in Sentry.
+    """
 
     def __init__(
-            self,
-            level: int = logging.WARNING,
-            active: bool = True,
-            as_extra: bool = True,
-            tag_keys: Union[List[str], str] = None) -> None:
-        """Sentry processor for structlog. Uses Sentry SDK to capture events in Sentry.
-
+        self,
+        level: int = logging.WARNING,
+        active: bool = True,
+        as_extra: bool = True,
+        tag_keys: Union[List[str], str] = None,
+    ) -> None:
+        """
         :param level: events of this or higher levels will be reported to Sentry.
         :param active: a flag to make this processor enabled/disabled.
         :param as_extra: send `event_dict` as extra info to Sentry.
         :param tag_keys: a list of keys. If any if these keys appear in `event_dict`,
-        the key and its corresponding value in `event_dict` will be used as Sentry event tags. use `"__all__"` to report
-        all key/value pairs of event as tags.
+            the key and its corresponding value in `event_dict` will be used as Sentry
+            event tags. use `"__all__"` to report all key/value pairs of event as tags.
         """
         self.level = level
         self.active = active
@@ -51,7 +55,9 @@ class SentryProcessor:
         if self.tag_keys == "__all__":
             event["tags"] = self._original_event_dict
         elif isinstance(self.tag_keys, list):
-            event["tags"] = {key: event_dict[key] for key in self.tag_keys if key in event_dict}
+            event["tags"] = {
+                key: event_dict[key] for key in self.tag_keys if key in event_dict
+            }
 
         return event, hint
 
@@ -81,7 +87,10 @@ class SentryProcessor:
 
 
 class SentryJsonProcessor(SentryProcessor):
-    """Sentry processor for structlog which uses JSONRenderer. Uses Sentry SDK to capture events in Sentry."""
+    """Sentry processor for structlog which uses JSONRenderer.
+
+    Uses Sentry SDK to capture events in Sentry.
+    """
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -93,7 +102,9 @@ class SentryJsonProcessor(SentryProcessor):
         return super().__call__(logger, method, event_dict)
 
     def _ignore_logger(self, logger, event_dict: dict) -> None:
-        """Tell Sentry to ignore logger. This is temporary workaround to prevent duplication of a JSON event in Sentry.
+        """Tell Sentry to ignore logger.
+
+        This is temporary workaround to prevent duplication of a JSON event in Sentry.
 
         :param logger: logger instance
         :param event_dict: structlog event_dict
