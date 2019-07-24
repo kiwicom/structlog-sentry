@@ -78,6 +78,7 @@ log.error(sentry_skip=True)
 ```
 
 ### Sentry Tags
+
 You can set some or all of key/value pairs of structlog `event_dict` as sentry `tags`:
 
 ```python
@@ -90,9 +91,9 @@ structlog.configure(
 
 log.error("error message", city="Tehran", timezone="UTC+3:30", movie_title="Some title")
 ```
-this will report the error and the sentry event will have **city** and **timezone** tags.
-If you want have all event data as tags, create the `SentryProcessor` with `tag_keys="__all__"`.  
 
+this will report the error and the sentry event will have **city** and **timezone** tags.
+If you want to have all event data as tags, create the `SentryProcessor` with `tag_keys="__all__"`.  
 
 ```python
 structlog.configure(
@@ -104,6 +105,7 @@ structlog.configure(
 ```
 
 ### Skip Extra
+
 By default `SentryProcessor` will send `event_dict` key/value pairs as extra info to the sentry. 
 Sometimes you may want to skip this, specially when sending the `event_dict` as sentry tags:
 
@@ -117,6 +119,7 @@ structlog.configure(
 ```
 
 ### Logging as JSON
+
 If you want to configure `structlog` to format the output as **JSON** 
 (maybe for [elk-stack](https://www.elastic.co/elk-stack)) you have to use `SentryJsonProcessor` to prevent
 duplication of an event reported to sentry.
@@ -133,8 +136,9 @@ structlog.configure(
     ],...
 )
 ```
-This processor tells sentry to _ignore_ the logger and captures the events manually. This
-is a temporary workaround to prevent event duplication in sentry.  
+
+This processor tells sentry to *ignore* the logger and captures the events manually.
+
 ## Testing
 
 To run all tests:

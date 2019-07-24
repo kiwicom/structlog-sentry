@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from structlog_sentry import SentryProcessor, SentryJsonProcessor
+from structlog_sentry import SentryJsonProcessor, SentryProcessor
 
 
 class MockLogger:

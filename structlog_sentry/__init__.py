@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Optional, List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 from sentry_sdk import capture_event
 from sentry_sdk.integrations.logging import ignore_logger
@@ -8,7 +8,6 @@ from sentry_sdk.utils import event_from_exception
 
 
 class SentryProcessor:
-    """Sentry processor for structlog. Uses Sentry SDK to capture events in Sentry."""
 
     def __init__(
             self,
@@ -16,9 +15,10 @@ class SentryProcessor:
             active: bool = True,
             as_extra: bool = True,
             tag_keys: Union[List[str], str] = None) -> None:
-        """
-        :param level: events of this or higher levels will be reported to Sentry
-        :param active: a flag to make this processor enabled/disabled
+        """Sentry processor for structlog. Uses Sentry SDK to capture events in Sentry.
+
+        :param level: events of this or higher levels will be reported to Sentry.
+        :param active: a flag to make this processor enabled/disabled.
         :param as_extra: send `event_dict` as extra info to Sentry.
         :param tag_keys: a list of keys. If any if these keys appear in `event_dict`,
         the key and its corresponding value in `event_dict` will be used as Sentry event tags. use `"__all__"` to report
@@ -31,8 +31,8 @@ class SentryProcessor:
         self._original_event_dict = None
 
     def _get_event_and_hint(self, event_dict: dict) -> Tuple[dict, Optional[str]]:
-        """
-        create a sentry event and hint from structlog `event_dict` and sys.exc_info
+        """Create a sentry event and hint from structlog `event_dict` and sys.exc_info.
+
         :param event_dict: structlog event_dict
         """
         exc_info = event_dict.pop("exc_info", sys.exc_info())
@@ -56,15 +56,15 @@ class SentryProcessor:
         return event, hint
 
     def _log(self, event_dict: dict) -> str:
-        """
-        send an event to Sentry and return sentry event id
+        """Send an event to Sentry and return sentry event id.
+
         :param event_dict: structlog event_dict
         """
         event, hint = self._get_event_and_hint(event_dict)
         return capture_event(event, hint=hint)
 
     def __call__(self, logger, method, event_dict) -> dict:
-        """a middleware to process structlog `event_dict` and send it to Sentry"""
+        """A middleware to process structlog `event_dict` and send it to Sentry."""
         self._original_event_dict = event_dict.copy()
         sentry_skip = event_dict.pop("sentry_skip", False)
         do_log = getattr(logging, event_dict["level"].upper()) >= self.level
@@ -93,8 +93,8 @@ class SentryJsonProcessor(SentryProcessor):
         return super().__call__(logger, method, event_dict)
 
     def _ignore_logger(self, logger, event_dict: dict) -> None:
-        """
-        tell Sentry to ignore logger. This is temporary workaround to prevent duplication of a JSON event in Sentry
+        """Tell Sentry to ignore logger. This is temporary workaround to prevent duplication of a JSON event in Sentry.
+
         :param logger: logger instance
         :param event_dict: structlog event_dict
         """
