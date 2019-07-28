@@ -7,14 +7,11 @@ from sentry_sdk.integrations.logging import ignore_logger
 from sentry_sdk.utils import event_from_exception
 
 
-def _get_level_from_method(method: str) -> str:
+def _get_level_from_method(method: str) -> int:
     """
     based on: https://www.structlog.org/en/stable/_modules/structlog/stdlib.html#add_log_level
     """
-    if method == "warn":
-        # The stdlib has an alias
-        return "WARNING"
-    return method.upper()
+    return logging._nameToLevel[method.upper()]
 
 
 class SentryProcessor:
@@ -83,7 +80,7 @@ class SentryProcessor:
         """A middleware to process structlog `event_dict` and send it to Sentry."""
         self._original_event_dict = event_dict.copy()
         sentry_skip = event_dict.pop("sentry_skip", False)
-        do_log = getattr(logging, _get_level_from_method(method)) >= self.level
+        do_log = _get_level_from_method(method) >= self.level
 
         if sentry_skip or not self.active or not do_log:
             event_dict["sentry"] = "skipped"
