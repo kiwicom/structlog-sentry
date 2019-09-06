@@ -1,5 +1,7 @@
 # structlog-sentry
 
+[![Build Status](https://travis-ci.org/kiwicom/structlog-sentry.svg?branch=master)](https://travis-ci.org/kiwicom/structlog-sentry)
+
 | What          | Where                                         |
 | ------------- | --------------------------------------------- |
 | Documentation | <https://github.com/kiwicom/structlog-sentry> |

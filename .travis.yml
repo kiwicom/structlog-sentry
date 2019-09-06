@@ -1,0 +1,24 @@
+---
+dist: bionic
+language: python
+
+install: pip install -U pip tox
+
+matrix:
+  fast_finish: true
+  include:
+    - name: Python 3.5 tests
+      python: '3.5'
+      script: tox -e py35
+
+    - name: Python 3.6 tests
+      python: '3.6'
+      script: tox -e py36
+
+    - name: Python 3.7 tests, linting
+      python: '3.7'
+      script: tox -e py37,lint
+
+branches:
+  only:
+    - master
