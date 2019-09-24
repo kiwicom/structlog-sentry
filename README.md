@@ -5,7 +5,7 @@
 | What          | Where                                         |
 | ------------- | --------------------------------------------- |
 | Documentation | <https://github.com/kiwicom/structlog-sentry> |
-| Maintainer    | @paveldedik                                   |
+| Maintainer    | [@paveldedik](https://github.com/paveldedik)  |
 
 Based on <https://gist.github.com/hynek/a1f3f92d57071ebc5b91>
 
