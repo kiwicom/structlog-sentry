@@ -94,15 +94,18 @@ class SentryJsonProcessor(SentryProcessor):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._is_logger_ignored = False
+        # A set of all encountered structured logger names. If an application uses
+        # multiple loggers with different names (eg. different qualnames), then each of
+        # those loggers needs to be ignored in Sentry's logging integration so that this
+        # processor will be the only thing reporting the events.
+        self._ignored = set()
 
     def __call__(self, logger, method, event_dict) -> dict:
-        if not self._is_logger_ignored:
-            self._ignore_logger(logger, event_dict)
+        self._ignore_logger(logger, event_dict)
         return super().__call__(logger, method, event_dict)
 
     def _ignore_logger(self, logger, event_dict: dict) -> None:
-        """Tell Sentry to ignore logger.
+        """Tell Sentry to ignore logger, if we haven't already.
 
         This is temporary workaround to prevent duplication of a JSON event in Sentry.
 
@@ -121,5 +124,6 @@ class SentryJsonProcessor(SentryProcessor):
         if not logger_name:
             raise Exception("Cannot ignore logger without a name.")
 
-        ignore_logger(logger_name)
-        self._is_logger_ignored = True
+        if logger_name not in self._ignored:
+            ignore_logger(logger_name)
+            self._ignored.add(logger_name)
