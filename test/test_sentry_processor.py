@@ -174,10 +174,10 @@ def test_sentry_json_ignore_logger_using_event_dict_logger_name(mocker):
     }
     processor = SentryJsonProcessor()
 
-    assert not processor._is_logger_ignored
+    assert not processor._ignored
     processor._ignore_logger(logger=m_logger, event_dict=event_data)
     m_ignore_logger.assert_called_once_with(event_data["logger"])
-    assert processor._is_logger_ignored
+    assert event_data["logger"] in processor._ignored
 
 
 def test_sentry_json_ignore_logger_using_event_dict_record(mocker):
@@ -190,10 +190,10 @@ def test_sentry_json_ignore_logger_using_event_dict_record(mocker):
     }
     processor = SentryJsonProcessor()
 
-    assert not processor._is_logger_ignored
+    assert not processor._ignored
     processor._ignore_logger(logger=m_logger, event_dict=event_data)
     m_ignore_logger.assert_called_once_with(event_data["_record"].name)
-    assert processor._is_logger_ignored
+    assert event_data["_record"].name in processor._ignored
 
 
 def test_sentry_json_ignore_logger_using_logger_instance_name(mocker):
@@ -202,10 +202,10 @@ def test_sentry_json_ignore_logger_using_logger_instance_name(mocker):
     event_data = {"level": "info", "event": "message"}
     processor = SentryJsonProcessor()
 
-    assert not processor._is_logger_ignored
+    assert not processor._ignored
     processor._ignore_logger(logger=m_logger, event_dict=event_data)
     m_ignore_logger.assert_called_once_with(m_logger.name)
-    assert processor._is_logger_ignored
+    assert m_logger.name in processor._ignored
 
 
 def test_sentry_json_call_ignores_logger_once(mocker):
@@ -217,3 +217,20 @@ def test_sentry_json_call_ignores_logger_once(mocker):
     processor(logger, None, event_data)
     processor(logger, None, event_data)
     m_ignore_logger.assert_called_once_with(logger.name)
+
+
+def test_sentry_json_ignores_multiple_loggers_once(mocker):
+    processor = SentryJsonProcessor()
+    m_ignore_logger = mocker.patch("structlog_sentry.ignore_logger")
+    event_data = {"level": "warning", "event": "message", "sentry_skip": True}
+    logger = MockLogger("MockLogger")
+    logger2 = MockLogger("MockLogger2")
+    processor(logger, None, event_data)
+    processor(logger, None, event_data)
+    processor(logger, None, event_data)
+    m_ignore_logger.assert_called_once_with(logger.name)
+    m_ignore_logger.reset_mock()
+    processor(logger2, None, event_data)
+    processor(logger2, None, event_data)
+    processor(logger2, None, event_data)
+    m_ignore_logger.assert_called_once_with(logger2.name)
