@@ -77,6 +77,25 @@ def test_sentry_log_failure(mocker, level):
     )
 
 
+@pytest.mark.parametrize("level", ["error", "critical"])
+def test_sentry_log_failure_exc_info_true(mocker, level):
+    """Make sure sentry_sdk.utils.exc_info_from_error doesn't raise ValueError
+    Because it can't introspect exc_info.
+    Bug triggered when logger.error(..., exc_info=True) or logger.exception(...)
+    are used.
+    """
+    m_capture_event = mocker.patch("structlog_sentry.capture_event")
+
+    event_data = {"level": level, "event": level + " message", "exc_info": True}
+    processor = SentryProcessor(level=getattr(logging, level.upper()))
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        processor(None, None, event_data)
+
+    assert m_capture_event.call_count == 1
+
+
 @pytest.mark.parametrize("level", ["debug", "info", "warning"])
 def test_sentry_log_no_extra(mocker, level):
     m_capture_event = mocker.patch("structlog_sentry.capture_event")
