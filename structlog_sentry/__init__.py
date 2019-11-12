@@ -40,6 +40,9 @@ class SentryProcessor:
         :param event_dict: structlog event_dict
         """
         exc_info = event_dict.pop("exc_info", sys.exc_info())
+        if exc_info is True:
+            # logger.exeception() or logger.error(exc_info=True)
+            exc_info = sys.exc_info()
         has_exc_info = exc_info and exc_info != (None, None, None)
 
         if has_exc_info:
