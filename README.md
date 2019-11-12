@@ -64,6 +64,9 @@ except RequestException:
     log.error("request error", user_id=user_id)
 ```
 
+This will automatically collect `sys.exc_info()` along with the message, if you want
+to turn this behavior off, just pass `exc_info=False`.
+
 Logging calls with no `sys.exc_info()` are also automatically captured by Sentry:
 
 ```python
