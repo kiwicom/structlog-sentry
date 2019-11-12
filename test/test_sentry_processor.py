@@ -93,7 +93,7 @@ def test_sentry_log_failure_exc_info_true(mocker, level):
     except ZeroDivisionError:
         processor(None, None, event_data)
 
-    m_capture_event.assert_called_once()
+    assert m_capture_event.call_count == 1
     _, kwargs = m_capture_event.call_args
     assert kwargs["hint"]["exc_info"][0] == ZeroDivisionError
 
