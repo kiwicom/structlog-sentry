@@ -98,6 +98,31 @@ def test_sentry_log_failure_exc_info_true(mocker, level):
     assert kwargs["hint"]["exc_info"][0] == ZeroDivisionError
 
 
+absent = object()
+
+
+@pytest.mark.parametrize("logger", ["some.logger.name", absent])
+def test_sentry_add_logger_name(mocker, logger):
+    m_capture_event = mocker.patch("structlog_sentry.capture_event")
+
+    if logger is absent:
+        event_data = {"level": "warning", "event": "some.event"}
+    else:
+        event_data = {"level": "warning", "event": "some.event", "logger": logger}
+
+    processor = SentryProcessor(as_extra=False)
+    processor(None, None, event_data)
+
+    if logger is absent:
+        m_capture_event.assert_called_once_with(
+            {"level": "warning", "message": "some.event"}, hint=None
+        )
+    else:
+        m_capture_event.assert_called_once_with(
+            {"level": "warning", "message": "some.event", "logger": logger}, hint=None
+        )
+
+
 @pytest.mark.parametrize("level", ["debug", "info", "warning"])
 def test_sentry_log_no_extra(mocker, level):
     m_capture_event = mocker.patch("structlog_sentry.capture_event")

@@ -52,6 +52,8 @@ class SentryProcessor:
 
         event["message"] = event_dict.get("event")
         event["level"] = event_dict.get("level")
+        if "logger" in event_dict:
+            event["logger"] = event_dict["logger"]
 
         if self._as_extra:
             event["extra"] = self._original_event_dict

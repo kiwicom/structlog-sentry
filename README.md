@@ -31,6 +31,7 @@ sentry_sdk.init()  # pass dsn in argument or via SENTRY_DSN env variable
 
 structlog.configure(
     processors=[
+        structlog.stdlib.add_logger_name,  # optional, but before SentryProcessor()
         structlog.stdlib.add_log_level,  # required before SentryProcessor()
         SentryProcessor(level=logging.ERROR),
     ],
@@ -42,8 +43,9 @@ structlog.configure(
 log = structlog.get_logger()
 ```
 
-Do not forget to add the `structlog.stdlib.add_log_level` processor before
-`SentryProcessor`. The `SentryProcessor` class takes the following arguments:
+Do not forget to add the `structlog.stdlib.add_log_level` and optionally the
+`structlog.stdlib.add_logger_name` processors before `SentryProcessor`. The
+`SentryProcessor` class takes the following arguments:
 
 - `level` - events of this or higher levels will be reported to Sentry,
   default is `WARNING`
@@ -89,6 +91,7 @@ You can set some or all of key/value pairs of structlog `event_dict` as sentry `
 ```python
 structlog.configure(
     processors=[
+        structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         SentryProcessor(level=logging.ERROR, tag_keys=["city", "timezone"]),
     ],...
@@ -103,6 +106,7 @@ If you want to have all event data as tags, create the `SentryProcessor` with `t
 ```python
 structlog.configure(
     processors=[
+        structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         SentryProcessor(level=logging.ERROR, tag_keys="__all__"),
     ],...
@@ -117,6 +121,7 @@ Sometimes you may want to skip this, specially when sending the `event_dict` as 
 ```python
 structlog.configure(
     processors=[
+        structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
         SentryProcessor(level=logging.ERROR, as_extra=False, tag_keys="__all__"),
     ],...
