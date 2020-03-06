@@ -105,10 +105,9 @@ absent = object()
 def test_sentry_add_logger_name(mocker, logger):
     m_capture_event = mocker.patch("structlog_sentry.capture_event")
 
-    if logger is absent:
-        event_data = {"level": "warning", "event": "some.event"}
-    else:
-        event_data = {"level": "warning", "event": "some.event", "logger": logger}
+    event_data = {"level": "warning", "event": "some.event"}
+    if logger is not absent:
+        event_data["logger"] = logger
 
     processor = SentryProcessor(as_extra=False)
     processor(None, None, event_data)
