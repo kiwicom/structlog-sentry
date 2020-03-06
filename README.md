@@ -69,6 +69,12 @@ except RequestException:
 This will automatically collect `sys.exc_info()` along with the message, if you want
 to turn this behavior off, just pass `exc_info=False`.
 
+When you want to use structlog's built-in
+[`format_exc_info`](http://www.structlog.org/en/stable/api.html#structlog.processors.format_exc_info)
+processor, make that the `SentryProcessor` comes *before* `format_exc_info`!
+Otherwise, the `SentryProcessor` won't have an `exc_info` to work with, because
+it's removed from the event by `format_exc_info`.
+
 Logging calls with no `sys.exc_info()` are also automatically captured by Sentry:
 
 ```python

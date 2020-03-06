@@ -122,6 +122,27 @@ def test_sentry_add_logger_name(mocker, logger):
         )
 
 
+def test_sentry_log_leave_exc_info_untouched(mocker):
+    """Make sure exc_info remains in event_data at the end of the processor.
+
+    The structlog built-in format_exc_info processor pops the key and formats
+    it. Using SentryProcessor, and format_exc_info wasn't possible before,
+    because the latter one didn't have an exc_info to work with.
+
+    https://github.com/kiwicom/structlog-sentry/issues/16
+    """
+    mocker.patch("structlog_sentry.capture_event")
+
+    event_data = {"level": "warning", "event": "some.event", "exc_info": True}
+    processor = SentryProcessor()
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        processor(None, None, event_data)
+
+    assert "exc_info" in event_data
+
+
 @pytest.mark.parametrize("level", ["debug", "info", "warning"])
 def test_sentry_log_no_extra(mocker, level):
     m_capture_event = mocker.patch("structlog_sentry.capture_event")
