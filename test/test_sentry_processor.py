@@ -52,11 +52,9 @@ def test_sentry_log(mocker, level):
 
 @pytest.mark.parametrize("level", ["error", "critical"])
 def test_sentry_log_failure(mocker, level):
+    """Make sure that events without exc_info=True will have no
+    'exception' information after processing"""
     m_capture_event = mocker.patch("structlog_sentry.capture_event")
-    mocker.patch(
-        "structlog_sentry.event_from_exception",
-        return_value=({"exception": mocker.sentinel.exception}, mocker.sentinel.hint),
-    )
 
     event_data = {"level": level, "event": level + " message"}
     sentry_event_data = event_data.copy()
@@ -67,13 +65,8 @@ def test_sentry_log_failure(mocker, level):
         processor(None, None, event_data)
 
     m_capture_event.assert_called_once_with(
-        {
-            "level": level,
-            "message": event_data["event"],
-            "exception": mocker.sentinel.exception,
-            "extra": sentry_event_data,
-        },
-        hint=mocker.sentinel.hint,
+        {"level": level, "message": event_data["event"], "extra": sentry_event_data},
+        hint=None,
     )
 
 
@@ -94,8 +87,9 @@ def test_sentry_log_failure_exc_info_true(mocker, level):
         processor(None, None, event_data)
 
     assert m_capture_event.call_count == 1
-    _, kwargs = m_capture_event.call_args
+    args, kwargs = m_capture_event.call_args
     assert kwargs["hint"]["exc_info"][0] == ZeroDivisionError
+    assert "exception" in args[0]
 
 
 absent = object()
