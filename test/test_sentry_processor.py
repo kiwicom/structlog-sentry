@@ -229,6 +229,67 @@ def test_sentry_log_specific_keys_as_tags(mocker, level):
     assert event_dict.get("sentry") != "sent"
 
 
+def test_sentry_get_logger_name():
+    event_data = {
+        "level": "info",
+        "event": "message",
+        "logger": "EventLogger",
+        "_record": MockLogger("RecordLogger"),
+    }
+    assert (
+        SentryProcessor._get_logger_name(logger=None, event_dict=event_data)
+        == "EventLogger"
+    )
+
+    event_data = {
+        "level": "info",
+        "event": "message",
+        "_record": MockLogger("RecordLogger"),
+    }
+    assert (
+        SentryProcessor._get_logger_name(logger=None, event_dict=event_data)
+        == "RecordLogger"
+    )
+
+    event_data = {
+        "level": "info",
+        "event": "message",
+    }
+    assert (
+        SentryProcessor._get_logger_name(
+            logger=MockLogger("EventLogger"), event_dict=event_data
+        )
+        == "EventLogger"
+    )
+
+
+@pytest.mark.parametrize("level", ["debug", "info", "warning", "error", "critical"])
+def test_sentry_ignore_logger(mocker, level):
+    m_capture_event = mocker.patch("structlog_sentry.capture_event")
+    blacklisted_logger = MockLogger("test.blacklisted")
+    whitelisted_logger = MockLogger("test.whitelisted")
+    processor = SentryProcessor(
+        level=getattr(logging, level.upper()), ignore_loggers=["test.blacklisted"]
+    )
+
+    event_data = {"level": level, "event": level + " message"}
+    sentry_event_data = event_data.copy()
+
+    blacklisted_logger_event_dict = processor(
+        blacklisted_logger, None, event_data.copy()
+    )
+    whitelisted_logger_event_dict = processor(
+        whitelisted_logger, None, event_data.copy()
+    )
+
+    m_capture_event.assert_called_once_with(
+        {"level": level, "message": event_data["event"], "extra": sentry_event_data,},
+        hint=None,
+    )
+    assert blacklisted_logger_event_dict.get("sentry") == "ignored"
+    assert whitelisted_logger_event_dict.get("sentry") != "ignored"
+
+
 def test_sentry_json_ignore_logger_using_event_dict_logger_name(mocker):
     m_ignore_logger = mocker.patch("structlog_sentry.ignore_logger")
     m_logger = MockLogger("MockLogger")

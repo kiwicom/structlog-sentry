@@ -1,9 +1,9 @@
 import logging
 import sys
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Set, Iterable
 
 from sentry_sdk import capture_event
-from sentry_sdk.integrations.logging import ignore_logger
+from sentry_sdk.integrations.logging import ignore_logger as logging_int_ignore_logger
 from sentry_sdk.utils import event_from_exception
 
 
@@ -19,6 +19,7 @@ class SentryProcessor:
         active: bool = True,
         as_extra: bool = True,
         tag_keys: Union[List[str], str] = None,
+        ignore_loggers: Optional[Iterable[str]] = None,
     ) -> None:
         """
         :param level: events of this or higher levels will be reported to Sentry.
@@ -27,12 +28,37 @@ class SentryProcessor:
         :param tag_keys: a list of keys. If any if these keys appear in `event_dict`,
             the key and its corresponding value in `event_dict` will be used as Sentry
             event tags. use `"__all__"` to report all key/value pairs of event as tags.
+        :param ignore_loggers: a list of logger names to ignore any events from.
         """
         self.level = level
         self.active = active
         self.tag_keys = tag_keys
         self._as_extra = as_extra
         self._original_event_dict = None
+        self._ignored_loggers: Set[str] = set()
+        if ignore_loggers is not None:
+            self._ignored_loggers.update(set(ignore_loggers))
+
+    @staticmethod
+    def _get_logger_name(logger, event_dict: dict) -> Optional[str]:
+        """Get logger name from event_dict with a fallbacks to logger.name and record.name
+
+        :param logger: logger instance
+        :param event_dict: structlog event_dict
+        """
+        record = event_dict.get("_record")
+        l_name = event_dict.get("logger")
+        logger_name = None
+
+        if l_name:
+            logger_name = l_name
+        elif record:
+            logger_name = record.name
+
+        if not logger_name and logger:
+            logger_name = logger.name
+
+        return logger_name
 
     def _get_event_and_hint(self, event_dict: dict) -> Tuple[dict, Optional[str]]:
         """Create a sentry event and hint from structlog `event_dict` and sys.exc_info.
@@ -76,6 +102,11 @@ class SentryProcessor:
 
     def __call__(self, logger, method, event_dict) -> dict:
         """A middleware to process structlog `event_dict` and send it to Sentry."""
+        logger_name = self._get_logger_name(logger=logger, event_dict=event_dict)
+        if logger_name in self._ignored_loggers:
+            event_dict["sentry"] = "ignored"
+            return event_dict
+
         self._original_event_dict = event_dict.copy()
         sentry_skip = event_dict.pop("sentry_skip", False)
         do_log = getattr(logging, event_dict["level"].upper()) >= self.level
@@ -117,18 +148,11 @@ class SentryJsonProcessor(SentryProcessor):
         :param logger: logger instance
         :param event_dict: structlog event_dict
         """
-        record = event_dict.get("_record")
-        l_name = event_dict.get("logger")
-        if l_name:
-            logger_name = l_name
-        elif record is None:
-            logger_name = logger.name
-        else:
-            logger_name = record.name
+        logger_name = self._get_logger_name(logger=logger, event_dict=event_dict)
 
         if not logger_name:
             raise Exception("Cannot ignore logger without a name.")
 
         if logger_name not in self._ignored:
-            ignore_logger(logger_name)
+            logging_int_ignore_logger(logger_name)
             self._ignored.add(logger_name)
