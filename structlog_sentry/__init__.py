@@ -56,9 +56,9 @@ class SentryProcessor:
             event["logger"] = event_dict["logger"]
 
         if self._as_extra:
-            event["extra"] = self._original_event_dict
+            event["extra"] = self._original_event_dict.copy()
         if self.tag_keys == "__all__":
-            event["tags"] = self._original_event_dict
+            event["tags"] = self._original_event_dict.copy()
         elif isinstance(self.tag_keys, list):
             event["tags"] = {
                 key: event_dict[key] for key in self.tag_keys if key in event_dict

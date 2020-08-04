@@ -165,7 +165,12 @@ def test_sentry_log_no_extra(mocker, level):
 
 @pytest.mark.parametrize("level", ["debug", "info", "warning"])
 def test_sentry_log_all_as_tags(mocker, level):
-    m_capture_event = mocker.patch("structlog_sentry.capture_event")
+    @mocker.create_autospec
+    def modify_extra(event, **kwargs):
+        event["extra"].update({"foo": "bar"})
+        assert "foo" not in event["tags"]
+
+    m_capture_event = mocker.patch("structlog_sentry.capture_event", modify_extra)
 
     event_data = {"level": level, "event": level + " message"}
     sentry_event_data = event_data.copy()
