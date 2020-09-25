@@ -119,6 +119,11 @@ structlog.configure(
 )
 ```
 
+**Note:** If you have non-simple values in your event data (such as dicts or lists), Sentry will
+not parse these as tags. Instead each will appear as an "invalid value" message on your events.
+Using `tag_keys="__all__"` can easily cause this, especially when integrating structlog
+and stdlib logging.
+
 ### Skip Extra
 
 By default `SentryProcessor` will send `event_dict` key/value pairs as extra info to the sentry.
