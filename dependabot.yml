@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    commit-message:
+      prefix: "chore(deps):"
+    labels:
+      - "dependencies"
+    pull-request-branch-name:
+      separator: "/"
