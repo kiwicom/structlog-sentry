@@ -1,0 +1,29 @@
+name: Commit
+on: push
+
+jobs:
+  tests:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Setting up tox environment
+        uses: docker://kiwicom/tox
+        env:
+          TOXENV: ${{ matrix.toxenv }}
+          XDG_CACHE_HOME: /tmp/cache
+        with:
+          args: >
+            sh -c
+            "
+            mkdir -p reports ;
+            tox -e $TOXENV -- --junitxml=reports/$TOXENV/test_report.xml --cov structlog_sentry --cov-report xml --cov-config .coveragerc --cov-append --cov-report xml:reports/coverage.xml
+            "
+      - name: Cache multiple paths
+        uses: actions/cache@v2
+        with:
+          path: .tox
+          key: ${{ runner.os }}-${{ hashFiles('poetry.lock') }}
+    strategy:
+      matrix:
+        toxenv: [py36, py37, py38, py39]
