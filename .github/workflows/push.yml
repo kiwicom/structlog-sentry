@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Setting up tox environment
-        uses: docker://kiwicom/tox
+        uses: docker://kiwicom/tox:3.22.0
         env:
           TOXENV: ${{ matrix.toxenv }}
           XDG_CACHE_HOME: /tmp/cache
