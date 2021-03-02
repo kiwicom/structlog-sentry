@@ -176,10 +176,6 @@ To run all tests:
 tox
 ```
 
-Note that tox doesn't know when you change the `requirements.txt`
-and won't automatically install new dependencies for test runs.
-Run `pip install tox-battery` to install a plugin which fixes this silliness.
-
 ## Contributing
 
 Create a merge request and tag @kiwicom/platform  for review.
