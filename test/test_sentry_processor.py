@@ -290,7 +290,7 @@ def test_sentry_ignore_logger(mocker, level):
 
 
 def test_sentry_json_ignore_logger_using_event_dict_logger_name(mocker):
-    m_ignore_logger = mocker.patch("structlog_sentry.ignore_logger")
+    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
     m_logger = MockLogger("MockLogger")
     event_data = {
         "level": "info",
@@ -307,7 +307,7 @@ def test_sentry_json_ignore_logger_using_event_dict_logger_name(mocker):
 
 
 def test_sentry_json_ignore_logger_using_event_dict_record(mocker):
-    m_ignore_logger = mocker.patch("structlog_sentry.ignore_logger")
+    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
     m_logger = MockLogger("MockLogger")
     event_data = {
         "level": "info",
@@ -323,7 +323,7 @@ def test_sentry_json_ignore_logger_using_event_dict_record(mocker):
 
 
 def test_sentry_json_ignore_logger_using_logger_instance_name(mocker):
-    m_ignore_logger = mocker.patch("structlog_sentry.ignore_logger")
+    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
     m_logger = MockLogger("MockLogger")
     event_data = {"level": "info", "event": "message"}
     processor = SentryJsonProcessor()
@@ -336,7 +336,7 @@ def test_sentry_json_ignore_logger_using_logger_instance_name(mocker):
 
 def test_sentry_json_call_ignores_logger_once(mocker):
     processor = SentryJsonProcessor()
-    m_ignore_logger = mocker.patch("structlog_sentry.ignore_logger")
+    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
     event_data = {"level": "warning", "event": "message", "sentry_skip": True}
     logger = MockLogger("MockLogger")
     processor(logger, None, event_data)
@@ -347,7 +347,7 @@ def test_sentry_json_call_ignores_logger_once(mocker):
 
 def test_sentry_json_ignores_multiple_loggers_once(mocker):
     processor = SentryJsonProcessor()
-    m_ignore_logger = mocker.patch("structlog_sentry.ignore_logger")
+    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
     event_data = {"level": "warning", "event": "message", "sentry_skip": True}
     logger = MockLogger("MockLogger")
     logger2 = MockLogger("MockLogger2")
