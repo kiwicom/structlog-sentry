@@ -8,7 +8,7 @@ on:
 jobs:
   build-and-publish:
     name: Publish PyPI package
-    runs-on: ubuntu-l
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
