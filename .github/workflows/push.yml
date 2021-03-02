@@ -17,6 +17,7 @@ jobs:
             sh -c
             "
             mkdir -p reports ;
+            apk add --no-cache cargo ;
             tox -e $TOXENV -- --junitxml=reports/$TOXENV/test_report.xml --cov structlog_sentry --cov-report xml --cov-config .coveragerc --cov-append --cov-report xml:reports/coverage.xml
             "
       - name: Cache multiple paths
