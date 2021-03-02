@@ -1,11 +1,9 @@
 # structlog-sentry
 
-[![Build Status](https://travis-ci.org/kiwicom/structlog-sentry.svg?branch=master)](https://travis-ci.org/kiwicom/structlog-sentry)
-
 | What          | Where                                         |
 | ------------- | --------------------------------------------- |
 | Documentation | <https://github.com/kiwicom/structlog-sentry> |
-| Maintainer    | [@paveldedik](https://github.com/paveldedik)  |
+| Maintainer    | @kiwicom/platform                             |
 
 Based on <https://gist.github.com/hynek/a1f3f92d57071ebc5b91>
 
@@ -66,8 +64,8 @@ except RequestException:
     log.error("request error", user_id=user_id)
 ```
 
-This will automatically collect `sys.exc_info()` along with the message, if you want
-to turn this behavior off, just pass `exc_info=False`.
+This won't automatically collect `sys.exc_info()` along with the message, if you want
+to enable this behavior, just pass `exc_info=True`.
 
 When you want to use structlog's built-in
 [`format_exc_info`](http://www.structlog.org/en/stable/api.html#structlog.processors.format_exc_info)
@@ -134,6 +132,21 @@ structlog.configure(
 )
 ```
 
+### Ignore specific loggers
+
+If you want to ignore specific loggers from being processed by the `SentryProcessor` just pass
+a list of loggers when instantiating the processor:
+
+```python
+structlog.configure(
+    processors=[
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        SentryProcessor(level=logging.ERROR, ignore_loggers=["some.logger"]),
+    ],...
+)
+```
+
 ### Logging as JSON
 
 If you want to configure `structlog` to format the output as **JSON**
@@ -169,4 +182,4 @@ Run `pip install tox-battery` to install a plugin which fixes this silliness.
 
 ## Contributing
 
-Create a merge request and assign it to @paveldedik for review.
+Create a merge request and tag @kiwicom/platform  for review.
