@@ -58,10 +58,10 @@ class SentryProcessor:
 
         if l_name:
             logger_name = l_name
-        elif record:
+        elif record and hasattr(record, "name"):
             logger_name = record.name
 
-        if not logger_name and logger:
+        if not logger_name and logger and hasattr(logger, "name"):
             logger_name = logger.name
 
         return logger_name
