@@ -30,7 +30,7 @@ sentry-sdk = "*"
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
 pytest-cov = "^2.11.1"
-pytest-mock = "^3.5.1"
+pytest-mock = "^3.6.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
