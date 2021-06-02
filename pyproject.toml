@@ -29,7 +29,7 @@ sentry-sdk = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.2"
-pytest-cov = "^2.11.1"
+pytest-cov = "^2.12.1"
 pytest-mock = "^3.5.1"
 
 [build-system]
