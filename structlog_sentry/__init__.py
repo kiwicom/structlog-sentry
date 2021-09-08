@@ -1,7 +1,8 @@
 import logging
 import sys
-from typing import List, Optional, Tuple, Union, Set, Iterable
+from typing import Iterable, Optional, Set, Tuple, Union
 
+from sentry_sdk import Hub as SentryHub
 from sentry_sdk import capture_event
 from sentry_sdk.integrations.logging import ignore_logger as logging_int_ignore_logger
 from sentry_sdk.utils import event_from_exception
@@ -16,13 +17,16 @@ class SentryProcessor:
     def __init__(
         self,
         level: int = logging.WARNING,
+        breadcrumb_level: Optional[int] = None,
+        ignore_breadcrumb_data: Iterable[str] = ("level", "logger", "event", "timestamp"),
         active: bool = True,
         as_extra: bool = True,
-        tag_keys: Union[List[str], str] = None,
+        tag_keys: Union[Iterable[str], str] = None,
         ignore_loggers: Optional[Iterable[str]] = None,
     ) -> None:
         """
         :param level: events of this or higher levels will be reported to Sentry.
+        :param breadcrumb_level: events of this or higher levels will be attached to breadcrumbs.
         :param active: a flag to make this processor enabled/disabled.
         :param as_extra: send `event_dict` as extra info to Sentry.
         :param tag_keys: a list of keys. If any if these keys appear in `event_dict`,
@@ -31,6 +35,8 @@ class SentryProcessor:
         :param ignore_loggers: a list of logger names to ignore any events from.
         """
         self.level = level
+        self.breadcrumb_level = breadcrumb_level
+        self.ignore_breadcrumb_data = ignore_breadcrumb_data
         self.active = active
         self.tag_keys = tag_keys
         self._as_extra = as_extra
@@ -96,9 +102,26 @@ class SentryProcessor:
         """Send an event to Sentry and return sentry event id.
 
         :param event_dict: structlog event_dict
+        :return sentry log id
         """
         event, hint = self._get_event_and_hint(event_dict)
         return capture_event(event, hint=hint)
+
+    def _log_breadcrumb(self, event_dict: dict):
+        """Send an event to Sentry and return sentry event id.
+
+        :param event_dict: structlog event_dict
+        """
+
+        data = {k: v for k, v in event_dict.items() if k not in self.ignore_breadcrumb_data}
+        event = {
+            "level": event_dict.get("level"),
+            "category": event_dict.get("logger"),
+            "message": event_dict["event"],
+            "type": "log",
+            "data": data,
+        }
+        SentryHub.current.add_breadcrumb(event)
 
     def __call__(self, logger, method, event_dict) -> dict:
         """A middleware to process structlog `event_dict` and send it to Sentry."""
@@ -108,16 +131,20 @@ class SentryProcessor:
             return event_dict
 
         self._original_event_dict = event_dict.copy()
+
         sentry_skip = event_dict.pop("sentry_skip", False)
-        do_log = getattr(logging, event_dict["level"].upper()) >= self.level
 
-        if sentry_skip or not self.active or not do_log:
+        event_level = logging.getLevelName(event_dict["level"].upper())
+
+        if sentry_skip or not self.active or event_level < self.level:
             event_dict["sentry"] = "skipped"
-            return event_dict
+        else:
+            sid = self._log(event_dict)
+            event_dict["sentry"] = "sent"
+            event_dict["sentry_id"] = sid
 
-        sid = self._log(event_dict)
-        event_dict["sentry"] = "sent"
-        event_dict["sentry_id"] = sid
+        if self.breadcrumb_level and event_level >= self.breadcrumb_level:
+            self._log_breadcrumb(event_dict)
 
         return event_dict
 
