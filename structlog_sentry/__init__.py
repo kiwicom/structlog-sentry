@@ -1,9 +1,11 @@
 import logging
 import sys
-from typing import List, Optional, Tuple, Union, Set, Iterable
+from typing import Iterable, List, Optional, Set, Tuple, Union
 
 from sentry_sdk import capture_event
-from sentry_sdk.integrations.logging import ignore_logger as logging_int_ignore_logger
+from sentry_sdk.integrations.logging import (
+    ignore_logger as logging_int_ignore_logger,
+)
 from sentry_sdk.utils import event_from_exception
 
 
