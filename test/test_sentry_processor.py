@@ -282,7 +282,11 @@ def test_sentry_ignore_logger(mocker, level):
     )
 
     m_capture_event.assert_called_once_with(
-        {"level": level, "message": event_data["event"], "extra": sentry_event_data,},
+        {
+            "level": level,
+            "message": event_data["event"],
+            "extra": sentry_event_data,
+        },
         hint=None,
     )
     assert blacklisted_logger_event_dict.get("sentry") == "ignored"
