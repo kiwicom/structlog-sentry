@@ -21,7 +21,7 @@ classifiers=[
     "Programming Language :: Python :: 3.9",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-include = ["*.md", "*.toml", "*.txt", "*.yml", "*.yaml", ".coveragerc", "tox.ini"]
+include = ["*.md", "*.toml", "*.txt", "*.yml", "*.yaml", ".coveragerc", "tox.ini", "structlog_sentry/py.typed"]
 
 [tool.poetry.dependencies]
 python = "^3.6"

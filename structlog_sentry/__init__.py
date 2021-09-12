@@ -1,9 +1,11 @@
 import logging
 import sys
-from typing import List, Optional, Tuple, Union, Set, Iterable
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from sentry_sdk import capture_event
-from sentry_sdk.integrations.logging import ignore_logger as logging_int_ignore_logger
+from sentry_sdk.integrations.logging import (
+    ignore_logger as logging_int_ignore_logger,
+)
 from sentry_sdk.utils import event_from_exception
 
 
@@ -34,13 +36,13 @@ class SentryProcessor:
         self.active = active
         self.tag_keys = tag_keys
         self._as_extra = as_extra
-        self._original_event_dict = None
+        self._original_event_dict: dict = None
         self._ignored_loggers: Set[str] = set()
         if ignore_loggers is not None:
             self._ignored_loggers.update(set(ignore_loggers))
 
     @staticmethod
-    def _get_logger_name(logger, event_dict: dict) -> Optional[str]:
+    def _get_logger_name(logger: Any, event_dict: dict) -> Optional[str]:
         """Get logger name from event_dict with a fallbacks to logger.name and record.name
 
         :param logger: logger instance
@@ -60,7 +62,9 @@ class SentryProcessor:
 
         return logger_name
 
-    def _get_event_and_hint(self, event_dict: dict) -> Tuple[dict, Optional[str]]:
+    def _get_event_and_hint(
+        self, event_dict: dict
+    ) -> Tuple[dict, Optional[Dict[str, Any]]]:
         """Create a sentry event and hint from structlog `event_dict` and sys.exc_info.
 
         :param event_dict: structlog event_dict
@@ -71,6 +75,7 @@ class SentryProcessor:
             exc_info = sys.exc_info()
         has_exc_info = exc_info and exc_info != (None, None, None)
 
+        hint: Optional[Dict[str, Any]]
         if has_exc_info:
             event, hint = event_from_exception(exc_info)
         else:
@@ -92,7 +97,7 @@ class SentryProcessor:
 
         return event, hint
 
-    def _log(self, event_dict: dict) -> str:
+    def _log(self, event_dict: dict) -> Optional[str]:
         """Send an event to Sentry and return sentry event id.
 
         :param event_dict: structlog event_dict
@@ -100,7 +105,7 @@ class SentryProcessor:
         event, hint = self._get_event_and_hint(event_dict)
         return capture_event(event, hint=hint)
 
-    def __call__(self, logger, method, event_dict) -> dict:
+    def __call__(self, logger: Any, method: Any, event_dict: dict) -> dict:
         """A middleware to process structlog `event_dict` and send it to Sentry."""
         logger_name = self._get_logger_name(logger=logger, event_dict=event_dict)
         if logger_name in self._ignored_loggers:
@@ -128,19 +133,27 @@ class SentryJsonProcessor(SentryProcessor):
     Uses Sentry SDK to capture events in Sentry.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        level: int = logging.WARNING,
+        active: bool = True,
+        as_extra: bool = True,
+        tag_keys: Union[List[str], str] = None,
+    ) -> None:
+        super().__init__(
+            level=level, active=active, as_extra=as_extra, tag_keys=tag_keys
+        )
         # A set of all encountered structured logger names. If an application uses
         # multiple loggers with different names (eg. different qualnames), then each of
         # those loggers needs to be ignored in Sentry's logging integration so that this
         # processor will be the only thing reporting the events.
-        self._ignored = set()
+        self._ignored: set = set()
 
-    def __call__(self, logger, method, event_dict) -> dict:
+    def __call__(self, logger: Any, method: Any, event_dict: dict) -> dict:
         self._ignore_logger(logger, event_dict)
         return super().__call__(logger, method, event_dict)
 
-    def _ignore_logger(self, logger, event_dict: dict) -> None:
+    def _ignore_logger(self, logger: Any, event_dict: dict) -> None:
         """Tell Sentry to ignore logger, if we haven't already.
 
         This is temporary workaround to prevent duplication of a JSON event in Sentry.
