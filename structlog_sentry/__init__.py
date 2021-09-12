@@ -137,8 +137,16 @@ class SentryJsonProcessor(SentryProcessor):
     Uses Sentry SDK to capture events in Sentry.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        level: int = logging.WARNING,
+        active: bool = True,
+        as_extra: bool = True,
+        tag_keys: Union[List[str], str] = None,
+    ) -> None:
+        super().__init__(
+            level=level, active=active, as_extra=as_extra, tag_keys=tag_keys
+        )
         # A set of all encountered structured logger names. If an application uses
         # multiple loggers with different names (eg. different qualnames), then each of
         # those loggers needs to be ignored in Sentry's logging integration so that this
