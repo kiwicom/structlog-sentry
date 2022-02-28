@@ -11,19 +11,19 @@ class MockLogger:
 
 
 def test_sentry_disabled():
-    processor = SentryProcessor(active=False)
+    processor = SentryProcessor(active=False, verbose=True)
     event_dict = processor(None, None, {"level": "error"})
     assert event_dict.get("sentry") != "sent"
 
 
 def test_sentry_skip():
-    processor = SentryProcessor()
+    processor = SentryProcessor(verbose=True)
     event_dict = processor(None, None, {"sentry_skip": True, "level": "error"})
-    assert event_dict.get("sentry") != "sent"
+    assert event_dict.get("sentry") == "skipped"
 
 
 def test_sentry_sent():
-    processor = SentryProcessor()
+    processor = SentryProcessor(verbose=True)
     event_dict = processor(None, None, {"level": "error"})
     assert event_dict.get("sentry") == "sent"
 
@@ -268,7 +268,9 @@ def test_sentry_ignore_logger(mocker, level):
     blacklisted_logger = MockLogger("test.blacklisted")
     whitelisted_logger = MockLogger("test.whitelisted")
     processor = SentryProcessor(
-        level=getattr(logging, level.upper()), ignore_loggers=["test.blacklisted"]
+        level=getattr(logging, level.upper()),
+        ignore_loggers=["test.blacklisted"],
+        verbose=True,
     )
 
     event_data = {"level": level, "event": level + " message"}
@@ -282,7 +284,11 @@ def test_sentry_ignore_logger(mocker, level):
     )
 
     m_capture_event.assert_called_once_with(
-        {"level": level, "message": event_data["event"], "extra": sentry_event_data,},
+        {
+            "level": level,
+            "message": event_data["event"],
+            "extra": sentry_event_data,
+        },
         hint=None,
     )
     assert blacklisted_logger_event_dict.get("sentry") == "ignored"

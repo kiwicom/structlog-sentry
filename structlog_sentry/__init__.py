@@ -1,9 +1,11 @@
 import logging
 import sys
-from typing import List, Optional, Tuple, Union, Set, Iterable
+from typing import Iterable, List, Optional, Set, Tuple, Union
 
 from sentry_sdk import capture_event
-from sentry_sdk.integrations.logging import ignore_logger as logging_int_ignore_logger
+from sentry_sdk.integrations.logging import (
+    ignore_logger as logging_int_ignore_logger,
+)
 from sentry_sdk.utils import event_from_exception
 
 
@@ -20,6 +22,7 @@ class SentryProcessor:
         as_extra: bool = True,
         tag_keys: Union[List[str], str] = None,
         ignore_loggers: Optional[Iterable[str]] = None,
+        verbose: bool = False,
     ) -> None:
         """
         :param level: events of this or higher levels will be reported to Sentry.
@@ -29,6 +32,7 @@ class SentryProcessor:
             the key and its corresponding value in `event_dict` will be used as Sentry
             event tags. use `"__all__"` to report all key/value pairs of event as tags.
         :param ignore_loggers: a list of logger names to ignore any events from.
+        :param verbose: report the action taken by the logger in the `event_dict`.
         """
         self.level = level
         self.active = active
@@ -36,6 +40,8 @@ class SentryProcessor:
         self._as_extra = as_extra
         self._original_event_dict = None
         self._ignored_loggers: Set[str] = set()
+        self.verbose = verbose
+
         if ignore_loggers is not None:
             self._ignored_loggers.update(set(ignore_loggers))
 
@@ -104,7 +110,8 @@ class SentryProcessor:
         """A middleware to process structlog `event_dict` and send it to Sentry."""
         logger_name = self._get_logger_name(logger=logger, event_dict=event_dict)
         if logger_name in self._ignored_loggers:
-            event_dict["sentry"] = "ignored"
+            if self.verbose:
+                event_dict["sentry"] = "ignored"
             return event_dict
 
         self._original_event_dict = event_dict.copy()
@@ -112,11 +119,13 @@ class SentryProcessor:
         do_log = getattr(logging, event_dict["level"].upper()) >= self.level
 
         if sentry_skip or not self.active or not do_log:
-            event_dict["sentry"] = "skipped"
+            if self.verbose:
+                event_dict["sentry"] = "skipped"
             return event_dict
 
         sid = self._log(event_dict)
-        event_dict["sentry"] = "sent"
+        if self.verbose:
+            event_dict["sentry"] = "sent"
         event_dict["sentry_id"] = sid
 
         return event_dict
