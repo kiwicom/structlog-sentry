@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Setting up tox environment
-        uses: docker://kiwicom/tox:3.22.0
+        uses: docker://kiwicom/tox:3.25.0
         env:
           TOXENV: ${{ matrix.toxenv }}
           XDG_CACHE_HOME: /tmp/cache
@@ -18,7 +18,7 @@ jobs:
             "
             mkdir -p reports ;
             apk add --no-cache cargo ;
-            tox -e $TOXENV -- --junitxml=reports/$TOXENV/test_report.xml --cov structlog_sentry --cov-report xml --cov-config .coveragerc --cov-append --cov-report xml:reports/coverage.xml
+            tox -e $TOXENV -- --junitxml=reports/$TOXENV/test_report.xml --cov-report xml --cov-config .coveragerc --cov-append --cov-report xml:reports/coverage.xml
             "
       - name: Cache multiple paths
         uses: actions/cache@v2
@@ -27,4 +27,4 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('poetry.lock') }}
     strategy:
       matrix:
-        toxenv: [py36, py37, py38, py39]
+        toxenv: [py37, py38, py39, py310]
