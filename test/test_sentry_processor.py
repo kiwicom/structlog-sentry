@@ -3,9 +3,7 @@ import logging
 import pytest
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
-
 from structlog_sentry import SentryProcessor
-
 
 INTEGRATIONS = [
     LoggingIntegration(event_level=None, level=None),
@@ -18,7 +16,9 @@ def sentry_events():
     with sentry_sdk.Hub() as hub:
         hub.bind_client(
             sentry_sdk.Client(
-                transport=events.append, integrations=INTEGRATIONS, auto_enabling_integrations=False
+                transport=events.append,
+                integrations=INTEGRATIONS,
+                auto_enabling_integrations=False,
             )
         )
         yield events
