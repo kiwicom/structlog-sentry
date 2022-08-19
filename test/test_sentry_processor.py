@@ -1,8 +1,36 @@
 import logging
 
 import pytest
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
 
-from structlog_sentry import SentryJsonProcessor, SentryProcessor
+from structlog_sentry import SentryProcessor
+
+
+INTEGRATIONS = [
+    LoggingIntegration(event_level=None, level=None),
+]
+
+
+@pytest.fixture
+def sentry_events():
+    events = []
+    with sentry_sdk.Hub() as hub:
+        hub.bind_client(
+            sentry_sdk.Client(
+                transport=events.append, integrations=INTEGRATIONS, auto_enabling_integrations=False
+            )
+        )
+        yield events
+
+
+def assert_event_dict(event_data, sentry_events, number_of_events=1, error=None):
+    assert len(sentry_events) == number_of_events
+    assert event_data["level"] == sentry_events[0]["level"]
+    assert event_data["event"] == sentry_events[0]["message"]
+
+    if error is not None:
+        assert sentry_events[0]["exception"]["values"][0]["type"] == error.__name__
 
 
 class MockLogger:
@@ -29,56 +57,47 @@ def test_sentry_sent():
 
 
 @pytest.mark.parametrize("level", ["debug", "info", "warning"])
-def test_sentry_log(mocker, level):
-    m_capture_event = mocker.patch("structlog_sentry.capture_event")
-
+def test_sentry_log(sentry_events, level):
     event_data = {"level": level, "event": level + " message"}
-    sentry_event_data = event_data.copy()
+
     processor = SentryProcessor(level=getattr(logging, level.upper()))
     processor(None, None, event_data)
 
-    m_capture_event.assert_called_once_with(
-        {"level": level, "message": event_data["event"], "extra": sentry_event_data},
-        hint=None,
-    )
+    assert_event_dict(event_data, sentry_events)
 
-    processor_only_errors = SentryProcessor(level=logging.ERROR)
+
+@pytest.mark.parametrize("level", ["debug", "info", "warning"])
+def test_sentry_log_only_errors(sentry_events, level):
+    processor_only_errors = SentryProcessor(level=logging.ERROR, verbose=True)
     event_dict = processor_only_errors(
         None, None, {"level": level, "event": level + " message"}
     )
-
-    assert event_dict.get("sentry") != "sent"
+    assert not sentry_events
+    assert event_dict["sentry"] == "skipped"
 
 
 @pytest.mark.parametrize("level", ["error", "critical"])
-def test_sentry_log_failure(mocker, level):
+def test_sentry_log_failure(sentry_events, level):
     """Make sure that events without exc_info=True will have no
-    'exception' information after processing"""
-    m_capture_event = mocker.patch("structlog_sentry.capture_event")
-
+    'exception' information after processing
+    """
     event_data = {"level": level, "event": level + " message"}
-    sentry_event_data = event_data.copy()
     processor = SentryProcessor(level=getattr(logging, level.upper()))
     try:
         1 / 0
     except ZeroDivisionError:
         processor(None, None, event_data)
 
-    m_capture_event.assert_called_once_with(
-        {"level": level, "message": event_data["event"], "extra": sentry_event_data},
-        hint=None,
-    )
+    assert_event_dict(event_data, sentry_events)
 
 
 @pytest.mark.parametrize("level", ["error", "critical"])
-def test_sentry_log_failure_exc_info_true(mocker, level):
+def test_sentry_log_failure_exc_info_true(sentry_events, level):
     """Make sure sentry_sdk.utils.exc_info_from_error doesn't raise ValueError
     Because it can't introspect exc_info.
     Bug triggered when logger.error(..., exc_info=True) or logger.exception(...)
     are used.
     """
-    m_capture_event = mocker.patch("structlog_sentry.capture_event")
-
     event_data = {"level": level, "event": level + " message", "exc_info": True}
     processor = SentryProcessor(level=getattr(logging, level.upper()))
     try:
@@ -86,37 +105,28 @@ def test_sentry_log_failure_exc_info_true(mocker, level):
     except ZeroDivisionError:
         processor(None, None, event_data)
 
-    assert m_capture_event.call_count == 1
-    args, kwargs = m_capture_event.call_args
-    assert kwargs["hint"]["exc_info"][0] == ZeroDivisionError
-    assert "exception" in args[0]
+    assert_event_dict(event_data, sentry_events, error=ZeroDivisionError)
 
 
 absent = object()
 
 
 @pytest.mark.parametrize("logger", ["some.logger.name", absent])
-def test_sentry_add_logger_name(mocker, logger):
-    m_capture_event = mocker.patch("structlog_sentry.capture_event")
-
+def test_sentry_add_logger_name(sentry_events, logger):
     event_data = {"level": "warning", "event": "some.event"}
     if logger is not absent:
         event_data["logger"] = logger
 
-    processor = SentryProcessor(as_extra=False)
+    processor = SentryProcessor(as_context=False)
     processor(None, None, event_data)
 
-    if logger is absent:
-        m_capture_event.assert_called_once_with(
-            {"level": "warning", "message": "some.event"}, hint=None
-        )
-    else:
-        m_capture_event.assert_called_once_with(
-            {"level": "warning", "message": "some.event", "logger": logger}, hint=None
-        )
+    assert_event_dict(event_data, sentry_events)
+
+    if logger is not absent:
+        assert event_data["logger"] == sentry_events[0]["logger"]
 
 
-def test_sentry_log_leave_exc_info_untouched(mocker):
+def test_sentry_log_leave_exc_info_untouched(sentry_events):
     """Make sure exc_info remains in event_data at the end of the processor.
 
     The structlog built-in format_exc_info processor pops the key and formats
@@ -125,10 +135,8 @@ def test_sentry_log_leave_exc_info_untouched(mocker):
 
     https://github.com/kiwicom/structlog-sentry/issues/16
     """
-    mocker.patch("structlog_sentry.capture_event")
-
     event_data = {"level": "warning", "event": "some.event", "exc_info": True}
-    processor = SentryProcessor()
+    processor = SentryProcessor(as_context=True)
     try:
         1 / 0
     except ZeroDivisionError:
@@ -138,63 +146,22 @@ def test_sentry_log_leave_exc_info_untouched(mocker):
 
 
 @pytest.mark.parametrize("level", ["debug", "info", "warning"])
-def test_sentry_log_no_extra(mocker, level):
-    m_capture_event = mocker.patch("structlog_sentry.capture_event")
-
+def test_sentry_log_all_as_tags(sentry_events, level):
     event_data = {"level": level, "event": level + " message"}
-    processor = SentryProcessor(level=getattr(logging, level.upper()), as_extra=False)
-    processor(None, None, event_data)
-
-    m_capture_event.assert_called_once_with(
-        {"level": level, "message": event_data["event"]}, hint=None
-    )
-
-    processor_only_errors = SentryProcessor(level=logging.ERROR)
-    event_dict = processor_only_errors(
-        None, None, {"level": level, "event": level + " message"}
-    )
-
-    assert event_dict.get("sentry") != "sent"
-
-
-@pytest.mark.parametrize("level", ["debug", "info", "warning"])
-def test_sentry_log_all_as_tags(mocker, level):
-    @mocker.create_autospec
-    def modify_extra(event, **kwargs):
-        event["extra"].update({"foo": "bar"})
-        assert "foo" not in event["tags"]
-
-    m_capture_event = mocker.patch("structlog_sentry.capture_event", modify_extra)
-
-    event_data = {"level": level, "event": level + " message"}
-    sentry_event_data = event_data.copy()
     processor = SentryProcessor(
         level=getattr(logging, level.upper()), tag_keys="__all__"
     )
     processor(None, None, event_data)
 
-    m_capture_event.assert_called_once_with(
-        {
-            "level": level,
-            "message": event_data["event"],
-            "extra": sentry_event_data,
-            "tags": sentry_event_data,
-        },
-        hint=None,
-    )
-
-    processor_only_errors = SentryProcessor(level=logging.ERROR)
-    event_dict = processor_only_errors(
-        None, None, {"level": level, "event": level + " message"}
-    )
-
-    assert event_dict.get("sentry") != "sent"
+    assert_event_dict(event_data, sentry_events)
+    assert event_data["level"] == sentry_events[0]["tags"]["level"]
+    assert event_data["event"] == sentry_events[0]["tags"]["event"]
+    assert event_data["level"] == sentry_events[0]["contexts"]["structlog"]["level"]
+    assert event_data["event"] == sentry_events[0]["contexts"]["structlog"]["event"]
 
 
 @pytest.mark.parametrize("level", ["debug", "info", "warning"])
-def test_sentry_log_specific_keys_as_tags(mocker, level):
-    m_capture_event = mocker.patch("structlog_sentry.capture_event")
-
+def test_sentry_log_specific_keys_as_tags(sentry_events, level):
     event_data = {
         "level": level,
         "event": level + " message",
@@ -202,30 +169,15 @@ def test_sentry_log_specific_keys_as_tags(mocker, level):
         "required": True,
     }
     tag_keys = ["info1", "required", "some non existing key"]
-    sentry_event_data = event_data.copy()
     processor = SentryProcessor(
         level=getattr(logging, level.upper()), tag_keys=tag_keys
     )
     processor(None, None, event_data)
 
-    m_capture_event.assert_called_once_with(
-        {
-            "level": level,
-            "message": event_data["event"],
-            "extra": sentry_event_data,
-            "tags": {
-                k: sentry_event_data[k] for k in tag_keys if k in sentry_event_data
-            },
-        },
-        hint=None,
-    )
-
-    processor_only_errors = SentryProcessor(level=logging.ERROR)
-    event_dict = processor_only_errors(
-        None, None, {"level": level, "event": level + " message"}
-    )
-
-    assert event_dict.get("sentry") != "sent"
+    assert_event_dict(event_data, sentry_events)
+    assert sentry_events[0]["tags"] == {
+        k: event_data[k] for k in tag_keys if k in event_data
+    }
 
 
 def test_sentry_get_logger_name():
@@ -263,8 +215,7 @@ def test_sentry_get_logger_name():
 
 
 @pytest.mark.parametrize("level", ["debug", "info", "warning", "error", "critical"])
-def test_sentry_ignore_logger(mocker, level):
-    m_capture_event = mocker.patch("structlog_sentry.capture_event")
+def test_sentry_ignore_logger(sentry_events, level):
     blacklisted_logger = MockLogger("test.blacklisted")
     whitelisted_logger = MockLogger("test.whitelisted")
     processor = SentryProcessor(
@@ -274,7 +225,6 @@ def test_sentry_ignore_logger(mocker, level):
     )
 
     event_data = {"level": level, "event": level + " message"}
-    sentry_event_data = event_data.copy()
 
     blacklisted_logger_event_dict = processor(
         blacklisted_logger, None, event_data.copy()
@@ -283,86 +233,6 @@ def test_sentry_ignore_logger(mocker, level):
         whitelisted_logger, None, event_data.copy()
     )
 
-    m_capture_event.assert_called_once_with(
-        {
-            "level": level,
-            "message": event_data["event"],
-            "extra": sentry_event_data,
-        },
-        hint=None,
-    )
+    assert_event_dict(event_data, sentry_events)
     assert blacklisted_logger_event_dict.get("sentry") == "ignored"
     assert whitelisted_logger_event_dict.get("sentry") != "ignored"
-
-
-def test_sentry_json_ignore_logger_using_event_dict_logger_name(mocker):
-    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
-    m_logger = MockLogger("MockLogger")
-    event_data = {
-        "level": "info",
-        "event": "message",
-        "logger": "EventLogger",
-        "_record": MockLogger("RecordLogger"),
-    }
-    processor = SentryJsonProcessor()
-
-    assert not processor._ignored
-    processor._ignore_logger(logger=m_logger, event_dict=event_data)
-    m_ignore_logger.assert_called_once_with(event_data["logger"])
-    assert event_data["logger"] in processor._ignored
-
-
-def test_sentry_json_ignore_logger_using_event_dict_record(mocker):
-    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
-    m_logger = MockLogger("MockLogger")
-    event_data = {
-        "level": "info",
-        "event": "message",
-        "_record": MockLogger("RecordLogger"),
-    }
-    processor = SentryJsonProcessor()
-
-    assert not processor._ignored
-    processor._ignore_logger(logger=m_logger, event_dict=event_data)
-    m_ignore_logger.assert_called_once_with(event_data["_record"].name)
-    assert event_data["_record"].name in processor._ignored
-
-
-def test_sentry_json_ignore_logger_using_logger_instance_name(mocker):
-    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
-    m_logger = MockLogger("MockLogger")
-    event_data = {"level": "info", "event": "message"}
-    processor = SentryJsonProcessor()
-
-    assert not processor._ignored
-    processor._ignore_logger(logger=m_logger, event_dict=event_data)
-    m_ignore_logger.assert_called_once_with(m_logger.name)
-    assert m_logger.name in processor._ignored
-
-
-def test_sentry_json_call_ignores_logger_once(mocker):
-    processor = SentryJsonProcessor()
-    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
-    event_data = {"level": "warning", "event": "message", "sentry_skip": True}
-    logger = MockLogger("MockLogger")
-    processor(logger, None, event_data)
-    processor(logger, None, event_data)
-    processor(logger, None, event_data)
-    m_ignore_logger.assert_called_once_with(logger.name)
-
-
-def test_sentry_json_ignores_multiple_loggers_once(mocker):
-    processor = SentryJsonProcessor()
-    m_ignore_logger = mocker.patch("structlog_sentry.logging_int_ignore_logger")
-    event_data = {"level": "warning", "event": "message", "sentry_skip": True}
-    logger = MockLogger("MockLogger")
-    logger2 = MockLogger("MockLogger2")
-    processor(logger, None, event_data)
-    processor(logger, None, event_data)
-    processor(logger, None, event_data)
-    m_ignore_logger.assert_called_once_with(logger.name)
-    m_ignore_logger.reset_mock()
-    processor(logger2, None, event_data)
-    processor(logger2, None, event_data)
-    processor(logger2, None, event_data)
-    m_ignore_logger.assert_called_once_with(logger2.name)
