@@ -3,13 +3,12 @@ from __future__ import annotations
 import logging
 import sys
 from fnmatch import fnmatch
-from typing import Iterable, Any, Optional
+from typing import Any, Iterable, Optional
 
 from sentry_sdk import Hub
 from sentry_sdk.integrations.logging import _IGNORED_LOGGERS
 from sentry_sdk.utils import capture_internal_exceptions, event_from_exception
-from structlog.types import WrappedLogger, ExcInfo, EventDict
-from sentry_sdk.utils import event_from_exception
+from structlog.types import EventDict, ExcInfo, WrappedLogger
 
 
 def _figure_out_exc_info(v: Any) -> ExcInfo:
@@ -46,7 +45,8 @@ class SentryProcessor:
     ) -> None:
         """
         :param level: events of this or higher levels will be reported to Sentry.
-        :param breadcrumb_level: events of this or higher levels will be reported as Sentry breadcrumbs.
+        :param breadcrumb_level: events of this or higher levels will be reported as
+            Sentry breadcrumbs.
         :param active: a flag to make this processor enabled/disabled.
         :param as_context: send `event_dict` as extra info to Sentry.
         :param tag_keys: a list of keys. If any if these keys appear in `event_dict`,
@@ -71,7 +71,8 @@ class SentryProcessor:
 
     @staticmethod
     def _get_logger_name(logger: WrappedLogger, event_dict: dict) -> Optional[str]:
-        """Get logger name from event_dict with a fallbacks to logger.name and record.name
+        """Get logger name from event_dict with a fallbacks to logger.name and
+        record.name
 
         :param logger: logger instance
         :param event_dict: structlog event_dict
@@ -112,11 +113,13 @@ class SentryProcessor:
             event["logger"] = event_dict["logger"]
 
         if self._as_context:
-            event["contexts"] = {"structlog": self._original_event_dict.copy()}  # type: ignore
+            event["contexts"] = {"structlog": self._original_event_dict.copy()}
         if self.tag_keys == "__all__":
             event["tags"] = self._original_event_dict.copy()
         if isinstance(self.tag_keys, list):
-            event["tags"] = {key: event_dict[key] for key in self.tag_keys if key in event_dict}
+            event["tags"] = {
+                key: event_dict[key] for key in self.tag_keys if key in event_dict
+            }
 
         return event, hint
 
@@ -156,7 +159,9 @@ class SentryProcessor:
             event, hint = self._get_breadcrumb_and_hint(event_dict)
             self._get_hub().add_breadcrumb(event, hint=hint)
 
-    def __call__(self, logger: WrappedLogger, name: str, event_dict: EventDict) -> EventDict:
+    def __call__(
+        self, logger: WrappedLogger, name: str, event_dict: EventDict
+    ) -> EventDict:
         """A middleware to process structlog `event_dict` and send it to Sentry."""
         self._original_event_dict = event_dict.copy()
         sentry_skip = event_dict.pop("sentry_skip", False)
