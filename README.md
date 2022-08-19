@@ -117,9 +117,9 @@ structlog.configure(
 )
 ```
 
-### Skip Extra
+### Skip Context
 
-By default `SentryProcessor` will send `event_dict` key/value pairs as extra info to the sentry.
+By default `SentryProcessor` will send `event_dict` key/value pairs as contextual info to sentry.
 Sometimes you may want to skip this, specially when sending the `event_dict` as sentry tags:
 
 ```python
@@ -127,7 +127,7 @@ structlog.configure(
     processors=[
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
-        SentryProcessor(level=logging.ERROR, as_extra=False, tag_keys="__all__"),
+        SentryProcessor(level=logging.ERROR, as_context=False, tag_keys="__all__"),
     ],...
 )
 ```
@@ -149,24 +149,24 @@ structlog.configure(
 
 ### Logging as JSON
 
-If you want to configure `structlog` to format the output as **JSON**
-(maybe for [elk-stack](https://www.elastic.co/elk-stack)) you have to use `SentryJsonProcessor` to prevent
-duplication of an event reported to sentry.
+If you want to configure `structlog` to format the output as **JSON** (maybe for
+[elk-stack](https://www.elastic.co/elk-stack)) you have to enable the
+`LoggingIntegration(event_level=None, level=None)` integration to prevent
+duplication of an event reported to sentry:
 
 ```python
-from structlog_sentry import SentryJsonProcessor
+from sentry_sdk.integrations.logging import LoggingIntegration
 
-structlog.configure(
-    processors=[
-        structlog.stdlib.add_logger_name,  # required before SentryJsonProcessor()
-        structlog.stdlib.add_log_level,
-        SentryJsonProcessor(level=logging.ERROR, tag_keys="__all__"),
-        structlog.processors.JSONRenderer()
-    ],...
-)
+
+INTEGRATIONS = [
+    # ... your other integrations
+    LoggingIntegration(event_level=None, level=None),
+]
+
+sentry_sdk.init(integrations=INTEGRATIONS)
 ```
 
-This processor tells sentry to *ignore* the logger and captures the events manually.
+This integration tells sentry_sdk to *ignore* standard logging and captures the events manually.
 
 ## Testing
 
