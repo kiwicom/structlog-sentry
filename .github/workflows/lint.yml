@@ -1,0 +1,22 @@
+name: Lint
+on: [pull_request]
+
+jobs:
+  pre-commit:
+    name: Run pre-commit hooks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+      - uses: pre-commit/action@v3.0.0
+
+  commitsar:
+    name: Verify commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3.0.0
+        with:
+          fetch-depth: 0
+      - name: Run commitsar
+        uses: aevea/commitsar@v0.19.0
