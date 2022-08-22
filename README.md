@@ -31,7 +31,7 @@ structlog.configure(
     processors=[
         structlog.stdlib.add_logger_name,  # optional, but before SentryProcessor()
         structlog.stdlib.add_log_level,  # required before SentryProcessor()
-        SentryProcessor(level=logging.ERROR),
+        SentryProcessor(event_level=logging.ERROR),
     ],
     logger_factory=...,
     wrapper_class=...,
@@ -45,17 +45,28 @@ Do not forget to add the `structlog.stdlib.add_log_level` and optionally the
 `structlog.stdlib.add_logger_name` processors before `SentryProcessor`. The
 `SentryProcessor` class takes the following arguments:
 
-- `level` - events of this or higher levels will be reported to Sentry,
-  default is `WARNING`
-- `active` - default is `True`, setting to `False` disables the processor
+- `level` Events of this or higher levels will be reported as Sentry
+  breadcrumbs. Dfault is :obj:`logging.INFO`.
+- `event_level` Events of this or higher levels will be reported to Sentry
+  as events. Default is :obj:`logging.WARNING`.
+- `active` A flag to make this processor enabled/disabled.
+- `as_context` Send `event_dict` as extra info to Sentry.
+  Default is :obj:`True`.
+- `tag_keys` A list of keys. If any if these keys appear in `event_dict`,
+  the key and its corresponding value in `event_dict` will be used as Sentry
+  event tags. use `"__all__"` to report all key/value pairs of event as tags.
+- `ignore_loggers` A list of logger names to ignore any events from.
+- `verbose` Report the action taken by the logger in the `event_dict`.
+  Default is :obj:`False`.
+- `hub` Optionally specify :obj:`sentry_sdk.Hub`.
 
-Now exceptions are automatically captured by Sentry with `log.error()`:
+Now events are automatically captured by Sentry with `log.error()`:
 
 ```python
 try:
     1/0
 except ZeroDivisionError:
-    log.error()
+    log.error("zero divsiion")
 
 try:
     resp = requests.get(f"https://api.example.com/users/{user_id}/")
@@ -73,7 +84,8 @@ processor, make that the `SentryProcessor` comes *before* `format_exc_info`!
 Otherwise, the `SentryProcessor` won't have an `exc_info` to work with, because
 it's removed from the event by `format_exc_info`.
 
-Logging calls with no `sys.exc_info()` are also automatically captured by Sentry:
+Logging calls with no `sys.exc_info()` are also automatically captured by Sentry
+either as breadcrumbs (if configured by the `level` argument) or as events:
 
 ```python
 log.info("info message", scope="accounts")
@@ -81,11 +93,11 @@ log.warning("warning message", scope="invoices")
 log.error("error message", scope="products")
 ```
 
-If you do not want to forward logs into Sentry, just pass the `sentry_skip=True`
-optional argument to logger methods, like this:
+If you do not want to forward a specific logs into Sentry, you can pass the
+`sentry_skip=True` optional argument to logger methods, like this:
 
 ```python
-log.error(sentry_skip=True)
+log.error("error message", sentry_skip=True)
 ```
 
 ### Sentry Tags
@@ -150,23 +162,23 @@ structlog.configure(
 ### Logging as JSON
 
 If you want to configure `structlog` to format the output as **JSON** (maybe for
-[elk-stack](https://www.elastic.co/elk-stack)) you have to enable the
-`LoggingIntegration(event_level=None, level=None)` integration to prevent
-duplication of an event reported to sentry:
+[elk-stack](https://www.elastic.co/elk-stack)) you have to disable standard logging
+integration in Sentry SDK by passing the `LoggingIntegration(event_level=None, level=None)`
+instance to `sentry_sdk.init` method. This prevents duplication of an event reported to sentry:
 
 ```python
 from sentry_sdk.integrations.logging import LoggingIntegration
 
 
 INTEGRATIONS = [
-    # ... your other integrations
+    # ... other integrations
     LoggingIntegration(event_level=None, level=None),
 ]
 
 sentry_sdk.init(integrations=INTEGRATIONS)
 ```
 
-This integration tells sentry_sdk to *ignore* standard logging and captures the events manually.
+This integration tells `sentry_sdk` to *ignore* standard logging and captures the events manually.
 
 ## Testing
 

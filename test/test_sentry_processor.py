@@ -60,7 +60,7 @@ def test_sentry_sent():
 def test_sentry_log(sentry_events, level):
     event_data = {"level": level, "event": level + " message"}
 
-    processor = SentryProcessor(level=getattr(logging, level.upper()))
+    processor = SentryProcessor(event_level=getattr(logging, level.upper()))
     processor(None, None, event_data)
 
     assert_event_dict(event_data, sentry_events)
@@ -68,7 +68,7 @@ def test_sentry_log(sentry_events, level):
 
 @pytest.mark.parametrize("level", ["debug", "info", "warning"])
 def test_sentry_log_only_errors(sentry_events, level):
-    processor_only_errors = SentryProcessor(level=logging.ERROR, verbose=True)
+    processor_only_errors = SentryProcessor(event_level=logging.ERROR, verbose=True)
     event_dict = processor_only_errors(
         None, None, {"level": level, "event": level + " message"}
     )
@@ -82,7 +82,7 @@ def test_sentry_log_failure(sentry_events, level):
     'exception' information after processing
     """
     event_data = {"level": level, "event": level + " message"}
-    processor = SentryProcessor(level=getattr(logging, level.upper()))
+    processor = SentryProcessor(event_level=getattr(logging, level.upper()))
     try:
         1 / 0
     except ZeroDivisionError:
@@ -99,7 +99,7 @@ def test_sentry_log_failure_exc_info_true(sentry_events, level):
     are used.
     """
     event_data = {"level": level, "event": level + " message", "exc_info": True}
-    processor = SentryProcessor(level=getattr(logging, level.upper()))
+    processor = SentryProcessor(event_level=getattr(logging, level.upper()))
     try:
         1 / 0
     except ZeroDivisionError:
@@ -149,7 +149,7 @@ def test_sentry_log_leave_exc_info_untouched(sentry_events):
 def test_sentry_log_all_as_tags(sentry_events, level):
     event_data = {"level": level, "event": level + " message"}
     processor = SentryProcessor(
-        level=getattr(logging, level.upper()), tag_keys="__all__"
+        event_level=getattr(logging, level.upper()), tag_keys="__all__"
     )
     processor(None, None, event_data)
 
@@ -170,7 +170,7 @@ def test_sentry_log_specific_keys_as_tags(sentry_events, level):
     }
     tag_keys = ["info1", "required", "some non existing key"]
     processor = SentryProcessor(
-        level=getattr(logging, level.upper()), tag_keys=tag_keys
+        event_level=getattr(logging, level.upper()), tag_keys=tag_keys
     )
     processor(None, None, event_data)
 
@@ -219,7 +219,7 @@ def test_sentry_ignore_logger(sentry_events, level):
     blacklisted_logger = MockLogger("test.blacklisted")
     whitelisted_logger = MockLogger("test.whitelisted")
     processor = SentryProcessor(
-        level=getattr(logging, level.upper()),
+        event_level=getattr(logging, level.upper()),
         ignore_loggers=["test.blacklisted"],
         verbose=True,
     )
