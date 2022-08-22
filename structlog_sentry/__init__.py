@@ -34,8 +34,8 @@ class SentryProcessor:
 
     def __init__(
         self,
-        level: int = logging.WARNING,
-        breadcrumb_level: int = logging.INFO,
+        level: int = logging.INFO,
+        event_level: int = logging.WARNING,
         active: bool = True,
         as_context: bool = True,
         tag_keys: list[str] | str | None = None,
@@ -44,19 +44,23 @@ class SentryProcessor:
         hub: Hub | None = None,
     ) -> None:
         """
-        :param level: events of this or higher levels will be reported to Sentry.
-        :param breadcrumb_level: events of this or higher levels will be reported as
-            Sentry breadcrumbs.
-        :param active: a flag to make this processor enabled/disabled.
-        :param as_context: send `event_dict` as extra info to Sentry.
-        :param tag_keys: a list of keys. If any if these keys appear in `event_dict`,
+        :param level: Events of this or higher levels will be reported as
+            Sentry breadcrumbs. Dfault is :obj:`logging.INFO`.
+        :param event_level: Events of this or higher levels will be reported to Sentry
+            as events. Default is :obj:`logging.WARNING`.
+        :param active: A flag to make this processor enabled/disabled.
+        :param as_context: Send `event_dict` as extra info to Sentry.
+            Default is :obj:`True`.
+        :param tag_keys: A list of keys. If any if these keys appear in `event_dict`,
             the key and its corresponding value in `event_dict` will be used as Sentry
             event tags. use `"__all__"` to report all key/value pairs of event as tags.
-        :param ignore_loggers: a list of logger names to ignore any events from.
-        :param verbose: report the action taken by the logger in the `event_dict`.
+        :param ignore_loggers: A list of logger names to ignore any events from.
+        :param verbose: Report the action taken by the logger in the `event_dict`.
+            Default is :obj:`False`.
+        :param hub: Optionally specify :obj:`sentry_sdk.Hub`.
         """
+        self.event_level = event_level
         self.level = level
-        self.breadcrumb_level = breadcrumb_level
         self.active = active
         self.tag_keys = tag_keys
         self.verbose = verbose
@@ -169,10 +173,10 @@ class SentryProcessor:
         if self.active and not sentry_skip and self._can_record(logger, event_dict):
             level = getattr(logging, event_dict["level"].upper())
 
-            if level >= self.level:
+            if level >= self.event_level:
                 self._handle_event(event_dict)
 
-            if level >= self.breadcrumb_level:
+            if level >= self.level:
                 self._handle_breadcrumb(event_dict)
 
         if self.verbose:
