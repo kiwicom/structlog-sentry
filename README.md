@@ -46,19 +46,18 @@ Do not forget to add the `structlog.stdlib.add_log_level` and optionally the
 `SentryProcessor` class takes the following arguments:
 
 - `level` Events of this or higher levels will be reported as Sentry
-  breadcrumbs. Dfault is :obj:`logging.INFO`.
+  breadcrumbs. Dfault is `logging.INFO`.
 - `event_level` Events of this or higher levels will be reported to Sentry
-  as events. Default is :obj:`logging.WARNING`.
+  as events. Default is `logging.WARNING`.
 - `active` A flag to make this processor enabled/disabled.
-- `as_context` Send `event_dict` as extra info to Sentry.
-  Default is :obj:`True`.
+- `as_context` Send `event_dict` as extra info to Sentry. Default is `True`.
 - `tag_keys` A list of keys. If any if these keys appear in `event_dict`,
   the key and its corresponding value in `event_dict` will be used as Sentry
   event tags. use `"__all__"` to report all key/value pairs of event as tags.
 - `ignore_loggers` A list of logger names to ignore any events from.
 - `verbose` Report the action taken by the logger in the `event_dict`.
-  Default is :obj:`False`.
-- `hub` Optionally specify :obj:`sentry_sdk.Hub`.
+  Default is `False`.
+- `hub` Optionally specify `sentry_sdk.Hub`.
 
 Now events are automatically captured by Sentry with `log.error()`:
 
