@@ -107,7 +107,12 @@ class SentryProcessor:
         has_exc_info = exc_info and exc_info != (None, None, None)
 
         if has_exc_info:
-            event, hint = event_from_exception(exc_info)
+            event, hint = event_from_exception(
+                exc_info,
+                client_options={
+                    "with_locals": self._get_hub().client.options.get("with_locals")
+                },
+            )
         else:
             event, hint = {}, {}
 

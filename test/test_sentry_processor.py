@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 
 import pytest
 import sentry_sdk
@@ -10,8 +11,28 @@ INTEGRATIONS = [
 ]
 
 
+@dataclass
+class ClientParams:
+    with_locals: bool = True
+
+    @classmethod
+    def from_request(cls, request):
+        if not hasattr(request, "param"):
+            return cls()
+
+        if isinstance(request.param, dict):
+            return cls(**request.param)
+
+        if isinstance(request.param, cls):
+            return request.param
+
+        return cls()
+
+
 @pytest.fixture
-def sentry_events():
+def sentry_events(request):
+    params = ClientParams.from_request(request)
+
     events = []
     with sentry_sdk.Hub() as hub:
         hub.bind_client(
@@ -19,6 +40,7 @@ def sentry_events():
                 transport=events.append,
                 integrations=INTEGRATIONS,
                 auto_enabling_integrations=False,
+                with_locals=params.with_locals,
             )
         )
         yield events
@@ -236,3 +258,29 @@ def test_sentry_ignore_logger(sentry_events, level):
     assert_event_dict(event_data, sentry_events)
     assert blacklisted_logger_event_dict.get("sentry") == "ignored"
     assert whitelisted_logger_event_dict.get("sentry") != "ignored"
+
+
+@pytest.mark.parametrize("sentry_events", [{"with_locals": False}], indirect=True)
+def test_sentry_json_respects_global_with_locals_option_no_locals(sentry_events):
+    processor = SentryProcessor()
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        processor(None, None, {"level": "error", "exc_info": True})
+
+    for event in sentry_events:
+        for frame in event["exception"]["values"][0]["stacktrace"]["frames"]:
+            assert "vars" not in frame  # No local variables were captured
+
+
+@pytest.mark.parametrize("sentry_events", [{"with_locals": True}], indirect=True)
+def test_sentry_json_respects_global_with_locals_option_with_locals(sentry_events):
+    processor = SentryProcessor()
+    try:
+        1 / 0
+    except ZeroDivisionError:
+        processor(None, None, {"level": "error", "exc_info": True})
+
+    for event in sentry_events:
+        for frame in event["exception"]["values"][0]["stacktrace"]["frames"]:
+            assert "vars" in frame  # Local variables were captured
