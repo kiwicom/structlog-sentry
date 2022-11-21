@@ -10,7 +10,7 @@ python-versions = ">=3.5"
 dev = ["cloudpickle", "coverage[toml] (>=5.0.2)", "furo", "hypothesis", "mypy (>=0.900,!=0.940)", "pre-commit", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "sphinx", "sphinx-notfound-page", "zope.interface"]
 docs = ["furo", "sphinx", "sphinx-notfound-page", "zope.interface"]
 tests = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "zope.interface"]
-tests_no_zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins"]
+tests-no-zope = ["cloudpickle", "coverage[toml] (>=5.0.2)", "hypothesis", "mypy (>=0.900,!=0.940)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins"]
 
 [[package]]
 name = "certifi"
@@ -46,7 +46,7 @@ toml = ["tomli"]
 name = "importlib-metadata"
 version = "4.12.0"
 description = "Read metadata from Python packages"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -185,7 +185,7 @@ falcon = ["falcon (>=1.4)"]
 fastapi = ["fastapi (>=0.79.0)"]
 flask = ["blinker (>=1.1)", "flask (>=0.11)"]
 httpx = ["httpx (>=0.16.0)"]
-pure_eval = ["asttokens", "executing", "pure-eval"]
+pure-eval = ["asttokens", "executing", "pure-eval"]
 pyspark = ["pyspark (>=2.4.4)"]
 quart = ["blinker (>=1.1)", "quart (>=0.16.1)"]
 rq = ["rq (>=0.6)"]
@@ -196,19 +196,21 @@ tornado = ["tornado (>=5)"]
 
 [[package]]
 name = "structlog"
-version = "22.1.0"
+version = "22.2.0"
 description = "Structured Logging for Python"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
+importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
 typing-extensions = {version = "*", markers = "python_version < \"3.8\""}
 
 [package.extras]
-dev = ["cogapp", "coverage", "freezegun (>=0.2.8)", "furo", "myst-parser", "pre-commit", "pretend", "pytest (>=6.0)", "pytest-asyncio (>=0.17)", "rich", "simplejson", "sphinx", "sphinx-notfound-page", "sphinxcontrib-mermaid", "tomli", "twisted"]
+dev = ["structlog[docs,tests,typing]"]
 docs = ["furo", "myst-parser", "sphinx", "sphinx-notfound-page", "sphinxcontrib-mermaid", "twisted"]
-tests = ["coverage", "freezegun (>=0.2.8)", "pretend", "pytest (>=6.0)", "pytest-asyncio (>=0.17)", "simplejson"]
+tests = ["coverage[toml]", "freezegun (>=0.2.8)", "pretend", "pytest (>=6.0)", "pytest-asyncio (>=0.17)", "simplejson"]
+typing = ["mypy", "rich", "twisted"]
 
 [[package]]
 name = "tomli"
@@ -243,7 +245,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 name = "zipp"
 version = "3.8.1"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -362,8 +364,8 @@ sentry-sdk = [
     {file = "sentry_sdk-1.9.7-py2.py3-none-any.whl", hash = "sha256:d391204a2a59c54b764cd351c44c67eed17b43d51f4dbe3eba48b83b70c93db9"},
 ]
 structlog = [
-    {file = "structlog-22.1.0-py3-none-any.whl", hash = "sha256:760d37b8839bd4fe1747bed7b80f7f4de160078405f4b6a1db9270ccbfce6c30"},
-    {file = "structlog-22.1.0.tar.gz", hash = "sha256:94b29b1d62b2659db154f67a9379ec1770183933d6115d21f21aa25cfc9a7393"},
+    {file = "structlog-22.2.0-py3-none-any.whl", hash = "sha256:bb1aa189214c30372a8afaa592f9556756aeb690e1ad7eb34391d7b5fa0f09b2"},
+    {file = "structlog-22.2.0.tar.gz", hash = "sha256:4edfe1d9f15f8a4bf365a817f7182af5d610596c155434b7564bfe7d40c2753c"},
 ]
 tomli = [
     {file = "tomli-2.0.1-py3-none-any.whl", hash = "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc"},
