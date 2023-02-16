@@ -11,6 +11,12 @@ INTEGRATIONS = [
 ]
 
 
+# Register custom log level
+CUSTOM_LOG_LEVEL_NAME = "CUSTOM_LEVEL"
+CUSTOM_LOG_LEVEL_VALUE = logging.DEBUG
+logging.addLevelName(CUSTOM_LOG_LEVEL_VALUE, CUSTOM_LOG_LEVEL_NAME)
+
+
 @dataclass
 class ClientParams:
     include_local_variables: bool = True
@@ -78,11 +84,19 @@ def test_sentry_sent():
     assert event_dict.get("sentry") == "sent"
 
 
-@pytest.mark.parametrize("level", ["debug", "info", "warning"])
-def test_sentry_log(sentry_events, level):
+@pytest.mark.parametrize(
+    "level, level_value",
+    [
+        (CUSTOM_LOG_LEVEL_NAME, CUSTOM_LOG_LEVEL_VALUE),
+        ("debug", logging.DEBUG),
+        ("info", logging.INFO),
+        ("warning", logging.WARNING),
+    ],
+)
+def test_sentry_log(sentry_events, level, level_value):
     event_data = {"level": level, "event": level + " message"}
 
-    processor = SentryProcessor(event_level=getattr(logging, level.upper()))
+    processor = SentryProcessor(event_level=level_value)
     processor(None, None, event_data)
 
     assert_event_dict(event_data, sentry_events)

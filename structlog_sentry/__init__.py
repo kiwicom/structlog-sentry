@@ -177,6 +177,21 @@ class SentryProcessor:
             event, hint = self._get_breadcrumb_and_hint(event_dict)
             self._get_hub().add_breadcrumb(event, hint=hint)
 
+    @staticmethod
+    def _get_level_value(level_name: str) -> int:
+        """Get numeric value for the log level name given."""
+        try:
+            # Try to get one of predefined log levels
+            return getattr(logging, level_name)
+        except AttributeError as e:
+            # May be it is a custom log level?
+            level = logging.getLevelName(level_name)
+            if isinstance(level, int):
+                return level
+
+            # Re-raise original error
+            raise ValueError(f"{level_name} is not a valid log level") from e
+
     def __call__(
         self, logger: WrappedLogger, name: str, event_dict: EventDict
     ) -> EventDict:
@@ -185,7 +200,7 @@ class SentryProcessor:
         sentry_skip = event_dict.pop("sentry_skip", False)
 
         if self.active and not sentry_skip and self._can_record(logger, event_dict):
-            level = getattr(logging, event_dict["level"].upper())
+            level = self._get_level_value(event_dict["level"].upper())
 
             if level >= self.event_level:
                 self._handle_event(event_dict)
