@@ -3,12 +3,16 @@ from __future__ import annotations
 import logging
 import sys
 from fnmatch import fnmatch
+from packaging import version
 from typing import Any, Iterable, Optional
 
-from sentry_sdk import Hub
+from sentry_sdk import Hub, VERSION
 from sentry_sdk.integrations.logging import _IGNORED_LOGGERS
 from sentry_sdk.utils import capture_internal_exceptions, event_from_exception
 from structlog.types import EventDict, ExcInfo, WrappedLogger
+
+
+_IS_OLD_VERSION = version.parse(VERSION) < version.parse("1.17.0")
 
 
 def _figure_out_exc_info(v: Any) -> ExcInfo:
@@ -107,10 +111,13 @@ class SentryProcessor:
         has_exc_info = exc_info and exc_info != (None, None, None)
 
         if has_exc_info:
+            options = self._get_hub().client.options
+            include_local_variables = options.get("include_local_variables", options.get("with_locals"))
+            key = "with_locals" if _IS_OLD_VERSION else "include_local_variables"
             event, hint = event_from_exception(
                 exc_info,
                 client_options={
-                    "with_locals": self._get_hub().client.options.get("with_locals")
+                    key: include_local_variables,
                 },
             )
         else:
