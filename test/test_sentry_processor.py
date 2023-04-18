@@ -13,7 +13,7 @@ INTEGRATIONS = [
 
 @dataclass
 class ClientParams:
-    with_locals: bool = True
+    include_local_variables: bool = True
 
     @classmethod
     def from_request(cls, request):
@@ -40,7 +40,7 @@ def sentry_events(request):
                 transport=events.append,
                 integrations=INTEGRATIONS,
                 auto_enabling_integrations=False,
-                with_locals=params.with_locals,
+                include_local_variables=params.include_local_variables,
             )
         )
         yield events
@@ -260,7 +260,9 @@ def test_sentry_ignore_logger(sentry_events, level):
     assert whitelisted_logger_event_dict.get("sentry") != "ignored"
 
 
-@pytest.mark.parametrize("sentry_events", [{"with_locals": False}], indirect=True)
+@pytest.mark.parametrize(
+    "sentry_events", [{"include_local_variables": False}], indirect=True
+)
 def test_sentry_json_respects_global_with_locals_option_no_locals(sentry_events):
     processor = SentryProcessor()
     try:
@@ -273,7 +275,9 @@ def test_sentry_json_respects_global_with_locals_option_no_locals(sentry_events)
             assert "vars" not in frame  # No local variables were captured
 
 
-@pytest.mark.parametrize("sentry_events", [{"with_locals": True}], indirect=True)
+@pytest.mark.parametrize(
+    "sentry_events", [{"include_local_variables": True}], indirect=True
+)
 def test_sentry_json_respects_global_with_locals_option_with_locals(sentry_events):
     processor = SentryProcessor()
     try:
