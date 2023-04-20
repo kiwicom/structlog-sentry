@@ -41,7 +41,9 @@ jobs:
           fetch-depth: 0
 
       - name: Generate changelog
-        uses: docker://aevea/release-notary
+        uses: docker://aevea/release-notary:0.9.7
+        with:
+          command: publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
