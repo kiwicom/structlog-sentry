@@ -29,12 +29,12 @@ sentry_sdk.init()  # pass dsn in argument or via SENTRY_DSN env variable
 
 structlog.configure(
     processors=[
-        structlog.stdlib.add_logger_name,  # optional, but before SentryProcessor()
+        structlog.stdlib.add_logger_name,  # optional, must be placed before SentryProcessor()
         structlog.stdlib.add_log_level,  # required before SentryProcessor()
         SentryProcessor(event_level=logging.ERROR),
     ],
-    logger_factory=...,
-    wrapper_class=...,
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
 )
 
 
