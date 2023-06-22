@@ -25,7 +25,6 @@ include = ["*.md", "*.toml", "*.txt", "*.yml", "*.yaml", ".coveragerc", "tox.ini
 
 [tool.poetry.dependencies]
 python = "^3.7"
-packaging = "*"
 sentry-sdk = "*"
 structlog = "*"
 
@@ -35,5 +34,5 @@ pytest-cov = "^3.0.0"
 pytest-mock = "^3.8.2"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=1.5.1"]
 build-backend = "poetry.core.masonry.api"
