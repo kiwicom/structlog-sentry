@@ -51,6 +51,11 @@ Do not forget to add the `structlog.stdlib.add_log_level` and optionally the
   as events. Default is `logging.WARNING`.
 - `active` A flag to make this processor enabled/disabled.
 - `as_context` Send `event_dict` as extra info to Sentry. Default is `True`.
+- `ignore_breadcrumb_data` A list of data keys that will be excluded from
+  [breadcrumb data](https://docs.sentry.io/platforms/python/enriching-events/breadcrumbs/#manual-breadcrumbs).
+  Defaults to keys which are already sent separately, i.e. `level`, `logger`,
+  `event` and `timestamp`. All other data in `event_dict` will be sent as
+  breadcrumb data.
 - `tag_keys` A list of keys. If any if these keys appear in `event_dict`,
   the key and its corresponding value in `event_dict` will be used as Sentry
   event tags. use `"__all__"` to report all key/value pairs of event as tags.
