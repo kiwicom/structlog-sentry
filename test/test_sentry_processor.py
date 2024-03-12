@@ -10,7 +10,6 @@ INTEGRATIONS = [
     LoggingIntegration(event_level=None, level=None),
 ]
 
-
 # Register custom log level
 CUSTOM_LOG_LEVEL_NAME = "CUSTOM_LEVEL"
 CUSTOM_LOG_LEVEL_VALUE = logging.DEBUG
@@ -302,3 +301,72 @@ def test_sentry_json_respects_global_with_locals_option_with_locals(sentry_event
     for event in sentry_events:
         for frame in event["exception"]["values"][0]["stacktrace"]["frames"]:
             assert "vars" in frame  # Local variables were captured
+
+
+base_info_log = {
+    "level": "info",
+    "event": "Info message",
+    "logger": "EventLogger",
+    "timestamp": "2024-01-01T00:00:00Z",
+}
+base_error_log = {
+    "level": "error",
+    "event": "Error message",
+}
+
+
+def test_breadcrumbs_with_additional_data(sentry_events):
+    processor = SentryProcessor(verbose=True)
+    processor(None, None, {**base_info_log, **{"foo": "bar"}})
+    processor(None, None, base_error_log)
+    print({**base_info_log, **{"foo": "bar"}})
+    breadcrumbs = sentry_events[0]["breadcrumbs"]["values"]
+    del breadcrumbs[0]["timestamp"]
+    assert breadcrumbs[0] == {
+        "type": "log",
+        "level": "info",
+        "category": "EventLogger",
+        "message": "Info message",
+        "data": {"foo": "bar"},
+    }
+
+
+def test_breadcrumbs_with_custom_exclusions(sentry_events):
+    processor = SentryProcessor(verbose=True, ignore_breadcrumb_data=["foo"])
+    processor(None, None, {**base_info_log, **{"foo": "bar"}})
+    processor(None, None, base_error_log)
+
+    breadcrumbs = sentry_events[0]["breadcrumbs"]["values"]
+
+    del breadcrumbs[0]["timestamp"]
+    assert breadcrumbs[0] == {
+        "type": "log",
+        "level": "info",
+        "category": "EventLogger",
+        "message": "Info message",
+        "data": {
+            "level": "info",
+            "event": "Info message",
+            "logger": "EventLogger",
+            "timestamp": "2024-01-01T00:00:00Z",
+        },
+    }
+
+
+def test_breadcrumbs_with_no_additional_data(sentry_events):
+    processor = SentryProcessor(verbose=True)
+    processor(None, None, base_info_log)
+    processor(None, None, base_error_log)
+
+    breadcrumbs = sentry_events[0]["breadcrumbs"]["values"]
+
+    assert len(breadcrumbs) == 1
+    assert isinstance(breadcrumbs[0]["timestamp"], str)
+    del breadcrumbs[0]["timestamp"]
+    assert breadcrumbs[0] == {
+        "type": "log",
+        "level": "info",
+        "category": "EventLogger",
+        "message": "Info message",
+        "data": {},
+    }
