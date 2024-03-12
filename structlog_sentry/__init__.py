@@ -38,6 +38,12 @@ class SentryProcessor:
         event_level: int = logging.WARNING,
         active: bool = True,
         as_context: bool = True,
+        ignore_breadcrumb_data: Iterable[str] = (
+            "level",
+            "logger",
+            "event",
+            "timestamp",
+        ),
         tag_keys: list[str] | str | None = None,
         ignore_loggers: Iterable[str] | None = None,
         verbose: bool = False,
@@ -51,6 +57,8 @@ class SentryProcessor:
         :param active: A flag to make this processor enabled/disabled.
         :param as_context: Send `event_dict` as extra info to Sentry.
             Default is :obj:`True`.
+        :param ignore_breadcrumb_data: A list of data keys that will be excluded from
+            breadcrumb data. Defaults to keys which are already sent separately.
         :param tag_keys: A list of keys. If any if these keys appear in `event_dict`,
             the key and its corresponding value in `event_dict` will be used as Sentry
             event tags. use `"__all__"` to report all key/value pairs of event as tags.
@@ -68,6 +76,7 @@ class SentryProcessor:
         self._hub = hub
         self._as_context = as_context
         self._original_event_dict: dict = {}
+        self.ignore_breadcrumb_data = ignore_breadcrumb_data
 
         self._ignored_loggers: set[str] = set()
         if ignore_loggers is not None:
@@ -131,13 +140,16 @@ class SentryProcessor:
         return event, hint
 
     def _get_breadcrumb_and_hint(self, event_dict: EventDict) -> tuple[dict, dict]:
+        data = {
+            k: v for k, v in event_dict.items() if k not in self.ignore_breadcrumb_data
+        }
         event = {
             "type": "log",
             "level": event_dict.get("level"),  # type: ignore
             "category": event_dict.get("logger"),
             "message": event_dict["event"],
             "timestamp": event_dict.get("timestamp"),
-            "data": {},
+            "data": data,
         }
 
         return event, {"log_record": event_dict}
