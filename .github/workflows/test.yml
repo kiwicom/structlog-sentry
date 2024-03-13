@@ -27,4 +27,4 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('poetry.lock') }}
     strategy:
       matrix:
-        toxenv: [py37, py38, py39, py310]
+        toxenv: [py37, py38, py39, py310, py311, py312]
