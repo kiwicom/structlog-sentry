@@ -3,28 +3,26 @@ on: [pull_request]
 
 jobs:
   integration-and-unit:
-    name: Run integration and unit tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Setting up tox environment
-        uses: docker://kiwicom/tox:3.25.0
-        env:
-          TOXENV: ${{ matrix.toxenv }}
-          XDG_CACHE_HOME: /tmp/cache
-        with:
-          args: >
-            sh -c
-            "
-            mkdir -p reports ;
-            apk add --no-cache cargo ;
-            tox -e $TOXENV -- --junitxml=reports/$TOXENV/test_report.xml --cov-report xml --cov-config .coveragerc --cov-append --cov-report xml:reports/coverage.xml
-            "
-      - name: Cache multiple paths
-        uses: actions/cache@v2
-        with:
-          path: .tox
-          key: ${{ runner.os }}-${{ hashFiles('poetry.lock') }}
     strategy:
       matrix:
-        toxenv: [py37, py38, py39, py310, py311, py312]
+        os: [ubuntu-22.04, windows-2019]
+        python: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
+      fail-fast: false
+
+    name: Env (Python ${{ matrix.python }} on ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install tox
+        run: pip install tox tox-gh-actions
+
+      - name: Run tox
+        run: python -m tox
