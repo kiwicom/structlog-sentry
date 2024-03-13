@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 import sys
 from fnmatch import fnmatch
-from typing import Any, Iterable, Optional
+from typing import Any, Optional
+from collections.abc import MutableMapping, Iterable
 
 from sentry_sdk import Hub
 from sentry_sdk.integrations.logging import _IGNORED_LOGGERS
@@ -83,7 +84,9 @@ class SentryProcessor:
             self._ignored_loggers.update(set(ignore_loggers))
 
     @staticmethod
-    def _get_logger_name(logger: WrappedLogger, event_dict: dict) -> Optional[str]:
+    def _get_logger_name(
+        logger: WrappedLogger, event_dict: MutableMapping[str, Any]
+    ) -> Optional[str]:
         """Get logger name from event_dict with a fallbacks to logger.name and
         record.name
 
@@ -116,9 +119,11 @@ class SentryProcessor:
         has_exc_info = exc_info and exc_info != (None, None, None)
 
         if has_exc_info:
+            client = self._get_hub().client
+            options: dict[str, Any] = client.options if client else {}
             event, hint = event_from_exception(
                 exc_info,
-                client_options=self._get_hub().client.options,
+                client_options=options,
             )
         else:
             event, hint = {}, {}
@@ -197,7 +202,7 @@ class SentryProcessor:
         self, logger: WrappedLogger, name: str, event_dict: EventDict
     ) -> EventDict:
         """A middleware to process structlog `event_dict` and send it to Sentry."""
-        self._original_event_dict = event_dict.copy()
+        self._original_event_dict = dict(event_dict)
         sentry_skip = event_dict.pop("sentry_skip", False)
 
         if self.active and not sentry_skip and self._can_record(logger, event_dict):
