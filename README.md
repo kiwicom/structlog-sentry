@@ -84,7 +84,7 @@ to enable this behavior, just pass `exc_info=True`.
 
 When you want to use structlog's built-in
 [`format_exc_info`](http://www.structlog.org/en/stable/api.html#structlog.processors.format_exc_info)
-processor, make that the `SentryProcessor` comes *before* `format_exc_info`!
+processor, make that the `SentryProcessor` comes _before_ `format_exc_info`!
 Otherwise, the `SentryProcessor` won't have an `exc_info` to work with, because
 it's removed from the event by `format_exc_info`.
 
@@ -182,7 +182,7 @@ INTEGRATIONS = [
 sentry_sdk.init(integrations=INTEGRATIONS)
 ```
 
-This integration tells `sentry_sdk` to *ignore* standard logging and captures the events manually.
+This integration tells `sentry_sdk` to _ignore_ standard logging and captures the events manually.
 
 ## Testing
 
@@ -194,4 +194,4 @@ tox
 
 ## Contributing
 
-Create a merge request and tag @kiwicom/platform  for review.
+Create a merge request and tag @kiwicom/platform for review.
