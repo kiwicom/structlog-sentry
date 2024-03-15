@@ -46,7 +46,7 @@ Do not forget to add the `structlog.stdlib.add_log_level` and optionally the
 `SentryProcessor` class takes the following arguments:
 
 - `level` Events of this or higher levels will be reported as Sentry
-  breadcrumbs. Dfault is `logging.INFO`.
+  breadcrumbs. Default is `logging.INFO`.
 - `event_level` Events of this or higher levels will be reported to Sentry
   as events. Default is `logging.WARNING`.
 - `active` A flag to make this processor enabled/disabled.
