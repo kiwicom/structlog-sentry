@@ -113,7 +113,7 @@ structlog.configure(
     processors=[
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
-        SentryProcessor(level=logging.ERROR, tag_keys=["city", "timezone"]),
+        SentryProcessor(event_level=logging.ERROR, tag_keys=["city", "timezone"]),
     ],...
 )
 
@@ -128,7 +128,7 @@ structlog.configure(
     processors=[
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
-        SentryProcessor(level=logging.ERROR, tag_keys="__all__"),
+        SentryProcessor(event_level=logging.ERROR, tag_keys="__all__"),
     ],...
 )
 ```
@@ -143,7 +143,7 @@ structlog.configure(
     processors=[
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
-        SentryProcessor(level=logging.ERROR, as_context=False, tag_keys="__all__"),
+        SentryProcessor(event_level=logging.ERROR, as_context=False, tag_keys="__all__"),
     ],...
 )
 ```
@@ -158,7 +158,7 @@ structlog.configure(
     processors=[
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
-        SentryProcessor(level=logging.ERROR, ignore_loggers=["some.logger"]),
+        SentryProcessor(event_level=logging.ERROR, ignore_loggers=["some.logger"]),
     ],...
 )
 ```
