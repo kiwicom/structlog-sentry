@@ -6,7 +6,7 @@ from fnmatch import fnmatch
 from typing import Any, Optional
 from collections.abc import MutableMapping, Iterable
 
-from sentry_sdk import Hub
+from sentry_sdk import Scope, get_isolation_scope
 from sentry_sdk.integrations.logging import _IGNORED_LOGGERS
 from sentry_sdk.utils import capture_internal_exceptions, event_from_exception
 from structlog.types import EventDict, ExcInfo, WrappedLogger
@@ -48,7 +48,7 @@ class SentryProcessor:
         tag_keys: list[str] | str | None = None,
         ignore_loggers: Iterable[str] | None = None,
         verbose: bool = False,
-        hub: Hub | None = None,
+        scope: Scope | None = None,
     ) -> None:
         """
         :param level: Events of this or higher levels will be reported as
@@ -66,7 +66,7 @@ class SentryProcessor:
         :param ignore_loggers: A list of logger names to ignore any events from.
         :param verbose: Report the action taken by the logger in the `event_dict`.
             Default is :obj:`False`.
-        :param hub: Optionally specify :obj:`sentry_sdk.Hub`.
+        :param scope: Optionally specify :obj:`sentry_sdk.Scope`.
         """
         self.event_level = event_level
         self.level = level
@@ -74,7 +74,7 @@ class SentryProcessor:
         self.tag_keys = tag_keys
         self.verbose = verbose
 
-        self._hub = hub
+        self._scope = scope
         self._as_context = as_context
         self._original_event_dict: dict = {}
         self.ignore_breadcrumb_data = ignore_breadcrumb_data
@@ -107,8 +107,8 @@ class SentryProcessor:
 
         return logger_name
 
-    def _get_hub(self) -> Hub:
-        return self._hub or Hub.current
+    def _get_scope(self) -> Scope:
+        return self._scope or get_isolation_scope()
 
     def _get_event_and_hint(self, event_dict: EventDict) -> tuple[dict, dict]:
         """Create a sentry event and hint from structlog `event_dict` and sys.exc_info.
@@ -119,7 +119,7 @@ class SentryProcessor:
         has_exc_info = exc_info and exc_info != (None, None, None)
 
         if has_exc_info:
-            client = self._get_hub().client
+            client = self._get_scope().client
             options: dict[str, Any] = client.options if client else {}
             event, hint = event_from_exception(
                 exc_info,
@@ -172,7 +172,7 @@ class SentryProcessor:
     def _handle_event(self, event_dict: EventDict) -> None:
         with capture_internal_exceptions():
             event, hint = self._get_event_and_hint(event_dict)
-            sid = self._get_hub().capture_event(event, hint=hint)
+            sid = self._get_scope().capture_event(event, hint=hint)
             if sid:
                 event_dict["sentry_id"] = sid
             if self.verbose:
@@ -181,7 +181,7 @@ class SentryProcessor:
     def _handle_breadcrumb(self, event_dict: EventDict) -> None:
         with capture_internal_exceptions():
             event, hint = self._get_breadcrumb_and_hint(event_dict)
-            self._get_hub().add_breadcrumb(event, hint=hint)
+            self._get_scope().add_breadcrumb(event, hint=hint)
 
     @staticmethod
     def _get_level_value(level_name: str) -> int:
