@@ -33,6 +33,7 @@ class ClientParams:
 
         return cls()
 
+
 class CaptureTransport(sentry_sdk.Transport):
     def __init__(self):
         super().__init__()
@@ -42,6 +43,7 @@ class CaptureTransport(sentry_sdk.Transport):
         event = envelope.get_event()
         if event is not None:
             self.events.append(event)
+
 
 @pytest.fixture
 def sentry_events(request):
