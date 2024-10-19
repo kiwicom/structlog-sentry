@@ -33,22 +33,30 @@ class ClientParams:
 
         return cls()
 
+class CaptureTransport(sentry_sdk.Transport):
+    def __init__(self):
+        super().__init__()
+        self.events = []
+
+    def capture_envelope(self, envelope):
+        event = envelope.get_event()
+        if event is not None:
+            self.events.append(event)
 
 @pytest.fixture
 def sentry_events(request):
     params = ClientParams.from_request(request)
+    transport = CaptureTransport()
+    client = sentry_sdk.Client(
+        transport=transport,
+        integrations=INTEGRATIONS,
+        auto_enabling_integrations=False,
+        include_local_variables=params.include_local_variables,
+    )
 
-    events = []
-    with sentry_sdk.Hub() as hub:
-        hub.bind_client(
-            sentry_sdk.Client(
-                transport=events.append,
-                integrations=INTEGRATIONS,
-                auto_enabling_integrations=False,
-                include_local_variables=params.include_local_variables,
-            )
-        )
-        yield events
+    with sentry_sdk.isolation_scope() as scope:
+        scope.set_client(client)
+        yield transport.events
 
 
 def assert_event_dict(event_data, sentry_events, number_of_events=1, error=None):
