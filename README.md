@@ -62,7 +62,8 @@ Do not forget to add the `structlog.stdlib.add_log_level` and optionally the
 - `ignore_loggers` A list of logger names to ignore any events from.
 - `verbose` Report the action taken by the logger in the `event_dict`.
   Default is `False`.
-- `hub` Optionally specify `sentry_sdk.Hub`.
+- `scope` Optionally specify `sentry_sdk.Client` (in `structlog-sentry<2.2`
+  this corresponds to `hub: sentry_sdk.Hub`).
 
 Now events are automatically captured by Sentry with `log.error()`:
 
