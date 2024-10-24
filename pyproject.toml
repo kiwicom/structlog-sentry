@@ -27,7 +27,7 @@ include = ["*.md", "*.toml", "*.txt", "*.yml", "*.yaml", ".coveragerc", "tox.ini
 
 [tool.poetry.dependencies]
 python = "^3.7"
-sentry-sdk = "^2.0"
+sentry-sdk = "^2.15.0"
 structlog = "*"
 
 [tool.poetry.dev-dependencies]
