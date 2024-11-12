@@ -119,7 +119,7 @@ class SentryProcessor:
         has_exc_info = exc_info and exc_info != (None, None, None)
 
         if has_exc_info:
-            client = self._get_scope().client
+            client = self._get_scope().get_client()
             options: dict[str, Any] = client.options if client else {}
             event, hint = event_from_exception(
                 exc_info,
