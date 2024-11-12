@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "structlog-sentry"
-version = "2.2.0"
+version = "2.2.1"
 description = "Sentry integration for structlog"
 authors = ["Kiwi.com platform <platform@kiwi.com>"]
 license = "MIT"
