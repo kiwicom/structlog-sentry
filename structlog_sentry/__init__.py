@@ -8,7 +8,11 @@ from collections.abc import MutableMapping, Iterable
 
 from sentry_sdk import Scope, get_isolation_scope
 from sentry_sdk.integrations.logging import _IGNORED_LOGGERS
-from sentry_sdk.utils import capture_internal_exceptions, event_from_exception
+from sentry_sdk.utils import (
+    capture_internal_exceptions,
+    event_from_exception,
+    current_stacktrace,
+)
 from structlog.types import EventDict, ExcInfo, WrappedLogger
 
 
@@ -121,10 +125,31 @@ class SentryProcessor:
         if has_exc_info:
             client = self._get_scope().get_client()
             options: dict[str, Any] = client.options if client else {}
-            event, hint = event_from_exception(
-                exc_info,
-                client_options=options,
-            )
+
+            # if the stack_info field is set utilize the internal sentry capture function to send out the exception
+            # with the stack trace. Ref: https://github.com/kiwicom/structlog-sentry/issues/87
+            if event_dict.get("stack_info", False):
+                event, hint = {}, {}
+                with capture_internal_exceptions():
+                    event["threads"] = {
+                        "values": [
+                            {
+                                "stacktrace": current_stacktrace(
+                                    include_local_variables=options[
+                                        "include_local_variables"
+                                    ],
+                                    max_value_length=options["max_value_length"],
+                                ),
+                                "crashed": False,
+                                "current": True,
+                            }
+                        ]
+                    }
+            else:
+                event, hint = event_from_exception(
+                    exc_info,
+                    client_options=options,
+                )
         else:
             event, hint = {}, {}
 
