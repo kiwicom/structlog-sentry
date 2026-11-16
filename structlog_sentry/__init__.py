@@ -76,7 +76,6 @@ class SentryProcessor:
 
         self._scope = scope
         self._as_context = as_context
-        self._original_event_dict: dict = {}
         self.ignore_breadcrumb_data = ignore_breadcrumb_data
 
         self._ignored_loggers: set[str] = set()
@@ -134,9 +133,9 @@ class SentryProcessor:
             event["logger"] = event_dict["logger"]
 
         if self._as_context:
-            event["contexts"] = {"structlog": self._original_event_dict.copy()}
+            event["contexts"] = {"structlog": dict(event_dict)}
         if self.tag_keys == "__all__":
-            event["tags"] = self._original_event_dict.copy()
+            event["tags"] = dict(event_dict)
         if isinstance(self.tag_keys, list):
             event["tags"] = {
                 key: event_dict[key] for key in self.tag_keys if key in event_dict
@@ -202,7 +201,6 @@ class SentryProcessor:
         self, logger: WrappedLogger, name: str, event_dict: EventDict
     ) -> EventDict:
         """A middleware to process structlog `event_dict` and send it to Sentry."""
-        self._original_event_dict = dict(event_dict)
         sentry_skip = event_dict.pop("sentry_skip", False)
 
         if self.active and not sentry_skip and self._can_record(logger, event_dict):
