@@ -380,3 +380,52 @@ def test_breadcrumbs_with_no_additional_data(sentry_events):
         "message": "Info message",
         "data": {},
     }
+
+
+def test_event_context_comes_from_its_own_line_when_threads_interleave():
+    """Another thread logging mid-call must not become this event's context or tags."""
+    import threading
+
+    captured = []
+
+    class Scope:
+        def get_client(self):
+            return None
+
+        def capture_event(self, event, hint=None):
+            captured.append(event)
+
+        def add_breadcrumb(self, *args, **kwargs):
+            pass
+
+    paused, resume = threading.Event(), threading.Event()
+
+    class SwitchingLevel(str):
+        """A level whose read hands control to another thread, as a GIL switch can."""
+
+        def upper(self):
+            paused.set()
+            resume.wait(5)
+            return str.upper(self)
+
+    processor = SentryProcessor(
+        event_level=logging.ERROR, scope=Scope(), tag_keys="__all__"
+    )
+    failing = threading.Thread(
+        target=processor,
+        args=(
+            None,
+            "error",
+            {"event": "a_failed", "level": SwitchingLevel("error"), "request_id": "a"},
+        ),
+    )
+    failing.start()
+    assert paused.wait(5)
+    processor(None, "info", {"event": "b_line", "level": "info", "request_id": "b"})
+    resume.set()
+    failing.join(5)
+
+    (event,) = captured
+    assert event["contexts"]["structlog"]["event"] == "a_failed"
+    assert event["contexts"]["structlog"]["request_id"] == "a"
+    assert event["tags"]["request_id"] == "a"
