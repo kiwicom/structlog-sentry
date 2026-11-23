@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import logging
 import sys
 from fnmatch import fnmatch
@@ -7,9 +8,21 @@ from typing import Any, Optional
 from collections.abc import MutableMapping, Iterable
 
 from sentry_sdk import Scope, get_isolation_scope
-from sentry_sdk.integrations.logging import _IGNORED_LOGGERS
+try:
+    # sentry-sdk 3.x keeps the loggers hidden from events and breadcrumbs
+    # (`ignore_logger_for_events`) apart from those hidden from Sentry Logs.
+    from sentry_sdk.integrations.logging import (
+        _IGNORED_LOGGERS_EVENTS as _IGNORED_LOGGERS,
+    )
+except ImportError:  # sentry-sdk 2.x
+    from sentry_sdk.integrations.logging import _IGNORED_LOGGERS
 from sentry_sdk.utils import capture_internal_exceptions, event_from_exception
 from structlog.types import EventDict, ExcInfo, WrappedLogger
+
+# sentry-sdk 3.x dropped the `client_options` argument and uses the current client.
+_EVENT_FROM_EXCEPTION_TAKES_CLIENT_OPTIONS = (
+    "client_options" in inspect.signature(event_from_exception).parameters
+)
 
 
 def _figure_out_exc_info(v: Any) -> ExcInfo:
@@ -118,12 +131,15 @@ class SentryProcessor:
         has_exc_info = exc_info and exc_info != (None, None, None)
 
         if has_exc_info:
-            client = self._get_scope().get_client()
-            options: dict[str, Any] = client.options if client else {}
-            event, hint = event_from_exception(
-                exc_info,
-                client_options=options,
-            )
+            if _EVENT_FROM_EXCEPTION_TAKES_CLIENT_OPTIONS:
+                client = self._get_scope().get_client()
+                options: dict[str, Any] = client.options if client else {}
+                event, hint = event_from_exception(
+                    exc_info,
+                    client_options=options,
+                )
+            else:  # sentry-sdk 3.x uses the current client's options
+                event, hint = event_from_exception(exc_info)
         else:
             event, hint = {}, {}
 

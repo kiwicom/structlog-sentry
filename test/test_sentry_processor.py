@@ -45,6 +45,14 @@ class CaptureTransport(sentry_sdk.Transport):
             self.events.append(event)
 
 
+def _local_variables_option(include: bool) -> dict:
+    # sentry-sdk 3.0 replaced `include_local_variables` with
+    # `data_collection["stack_frame_variables"]`.
+    if int(sentry_sdk.VERSION.split(".")[0]) >= 3:
+        return {"data_collection": {"stack_frame_variables": include}}
+    return {"include_local_variables": include}
+
+
 @pytest.fixture
 def sentry_events(request):
     params = ClientParams.from_request(request)
@@ -53,7 +61,7 @@ def sentry_events(request):
         transport=transport,
         integrations=INTEGRATIONS,
         auto_enabling_integrations=False,
-        include_local_variables=params.include_local_variables,
+        **_local_variables_option(params.include_local_variables),
     )
 
     with sentry_sdk.isolation_scope() as scope:
