@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import pytest
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
+from structlog_sentry import _SENTRY_SDK_V3 as SENTRY_SDK_V3
 from structlog_sentry import SentryProcessor
 
 INTEGRATIONS = [
@@ -49,11 +50,17 @@ class CaptureTransport(sentry_sdk.Transport):
 def sentry_events(request):
     params = ClientParams.from_request(request)
     transport = CaptureTransport()
+    if SENTRY_SDK_V3:
+        local_variables = {
+            "data_collection": {"stack_frame_variables": params.include_local_variables}
+        }
+    else:
+        local_variables = {"include_local_variables": params.include_local_variables}
     client = sentry_sdk.Client(
         transport=transport,
         integrations=INTEGRATIONS,
         auto_enabling_integrations=False,
-        include_local_variables=params.include_local_variables,
+        **local_variables,
     )
 
     with sentry_sdk.isolation_scope() as scope:
