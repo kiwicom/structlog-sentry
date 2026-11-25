@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import logging
 import sys
 from fnmatch import fnmatch
@@ -8,6 +7,8 @@ from typing import Any, Optional
 from collections.abc import MutableMapping, Iterable
 
 from sentry_sdk import Scope, get_isolation_scope
+from sentry_sdk.consts import VERSION as SENTRY_SDK_VERSION
+
 try:
     # sentry-sdk 3.x keeps the loggers hidden from events and breadcrumbs
     # (`ignore_logger_for_events`) apart from those hidden from Sentry Logs.
@@ -20,9 +21,7 @@ from sentry_sdk.utils import capture_internal_exceptions, event_from_exception
 from structlog.types import EventDict, ExcInfo, WrappedLogger
 
 # sentry-sdk 3.x dropped the `client_options` argument and uses the current client.
-_EVENT_FROM_EXCEPTION_TAKES_CLIENT_OPTIONS = (
-    "client_options" in inspect.signature(event_from_exception).parameters
-)
+_SENTRY_SDK_V3 = int(SENTRY_SDK_VERSION.split(".")[0]) >= 3
 
 
 def _figure_out_exc_info(v: Any) -> ExcInfo:
@@ -131,15 +130,15 @@ class SentryProcessor:
         has_exc_info = exc_info and exc_info != (None, None, None)
 
         if has_exc_info:
-            if _EVENT_FROM_EXCEPTION_TAKES_CLIENT_OPTIONS:
+            if _SENTRY_SDK_V3:  # uses the current client's options
+                event, hint = event_from_exception(exc_info)
+            else:
                 client = self._get_scope().get_client()
                 options: dict[str, Any] = client.options if client else {}
                 event, hint = event_from_exception(
                     exc_info,
                     client_options=options,
                 )
-            else:  # sentry-sdk 3.x uses the current client's options
-                event, hint = event_from_exception(exc_info)
         else:
             event, hint = {}, {}
 
